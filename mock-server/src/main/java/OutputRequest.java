@@ -1,16 +1,16 @@
 import model.OutInRule;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 
 public class OutputRequest extends Thread {
     private OutInRule outInRule;
-    private OkHttpClient client = new OkHttpClient();
+    private HttpClient client = HttpClient.newHttpClient();
 
     public OutputRequest(OutInRule outInRule) {
         this.outInRule = outInRule;
@@ -24,11 +24,16 @@ public class OutputRequest extends Thread {
             e.printStackTrace();
         }
         for (int i = 0; i < outInRule.getRepeat(); i++) {
-            RequestBody body = (outInRule.getRequest().getMethod().equals("GET")) ? null : RequestBody.create(outInRule.getRequest().getBody(), null);
-            Request r = new Request.Builder()
-                    .method(outInRule.getRequest().getMethod(), body)
-                    .url(outInRule.getRequest().getPath()).build();
-            requestAsync(r);
+            try {
+                HttpRequest.Builder builder = HttpRequest.newBuilder()
+                        .method(outInRule.getRequest().getMethod(), HttpRequest.BodyPublishers.ofString(outInRule.getRequest().getBody()))
+                        .uri(new URI(outInRule.getRequest().getPath()));
+
+                requestAsync(builder.build());
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+
             try {
                 Thread.sleep(outInRule.getInterval());
             } catch (InterruptedException e) {
@@ -37,11 +42,11 @@ public class OutputRequest extends Thread {
         }
     }
 
-    private void requestAsync(Request request) {
+    private void requestAsync(HttpRequest request) {
         new Thread(() -> {
-            try (Response response = client.newCall(request).execute()) {
-                response.body();
-            } catch (IOException e) {
+            try {
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }).start();
