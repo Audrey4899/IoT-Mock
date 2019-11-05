@@ -23,7 +23,9 @@ public class OutputRequest extends Thread {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        for (int i = 0; i < outInRule.getRepeat(); i++) {
+        int i = 0;
+        boolean infinite = (outInRule.getRepeat() == 0);
+        while ((i < outInRule.getRepeat() || infinite)) {
             try {
                 HttpRequest.Builder builder = HttpRequest.newBuilder()
                         .method(outInRule.getRequest().getMethod(), HttpRequest.BodyPublishers.ofString(outInRule.getRequest().getBody()))
@@ -39,6 +41,7 @@ public class OutputRequest extends Thread {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            i++;
         }
     }
 
