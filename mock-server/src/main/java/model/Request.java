@@ -2,6 +2,7 @@ package model;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class Request {
     private String method;
@@ -12,8 +13,8 @@ public class Request {
     public Request(String method, String path, Map<String, String> headers, String body) {
         this.method = method;
         this.path = path;
-        this.headers = headers;
-        this.body = body;
+        this.headers = (headers != null)? headers : new TreeMap<>();
+        this.body = (body != null)? body : "";
     }
 
     public String getMethod() {

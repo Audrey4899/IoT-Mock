@@ -5,8 +5,11 @@ public class OutInRule extends Rule {
     private int repeat;
     private long interval;
 
-    public OutInRule(Request request, Response response) {
+    public OutInRule(Request request, Response response, long timeout, int repeat, long interval) {
         super(request, response);
+        this.timeout = timeout;
+        this.repeat = repeat;
+        this.interval = interval;
     }
 
     public long getTimeout() {

@@ -2,6 +2,7 @@ package model;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class Response {
     private int status;
@@ -10,8 +11,8 @@ public class Response {
 
     public Response(int status, Map<String, String> headers, String body) {
         this.status = status;
-        this.headers = headers;
-        this.body = body;
+        this.headers = (headers != null)? headers : new TreeMap<>();
+        this.body = (body != null) ? body : "";
     }
 
     public int getStatus() {
