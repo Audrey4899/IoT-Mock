@@ -23,4 +23,5 @@ dependencies {
         exclude group: 'org.eclipse.jetty.websocket'
     }
     compile 'org.slf4j:slf4j-simple:2.0.0-alpha1'
+    compile 'org.yaml:snakeyaml:1.25'
 }
