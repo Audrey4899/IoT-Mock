@@ -35,9 +35,24 @@ class Rule
             }
         }
         unless request_headers.nil?
-            @rule_hash["req"]["headers"] = {}
-            @rule_hash["req"]["headers"]["Content-Type"] = @request_headers.to_s.delete("@")
+            @rule_hash["req"].merge!({"headers"=> {}})
+            @rule_hash["req"]["headers"].merge!({"Content-Type" => @request_headers.to_s.delete("@")})
         end
+        unless request_body.nil? || request_body.empty?
+            @rule_hash["req"].merge!({"body"=> @request_body.to_s.delete("@")})
+        end
+        if @type == "inOut"
+            @rule_hash.merge!({"res"=> {}})
+            @rule_hash["res"].merge!({"status"=> @response_status.to_i}) 
+            unless response_headers.nil?
+                @rule_hash["res"].merge!({"headers"=> {}})
+                @rule_hash["res"]["headers"].merge!({"Content-Type" => @response_headers.to_s.delete("@")})
+            end
+            unless response_body.nil? || response_body.empty?
+                @rule_hash["res"].merge!({"body"=> @response_body.to_s.delete("@")})
+            end
+        end
+        return @rule_hash
     end
 end
 
@@ -94,13 +109,13 @@ class Generator
         unless request.nil?
             @request_headers = request[1]
         else
-            @request_headers == nil
+            @request_headers = nil
         end
         request = requests[0].match(/;;(.*)/)
         unless request.nil?
             @request_body = request[1]
         else
-            @request_body == nil
+            @request_body = nil
         end
     end
 
@@ -114,13 +129,13 @@ class Generator
         unless response.nil?
             @response_headers = response[1]
         else
-            @response_headers == nil
+            @response_headers = nil
         end
         response = responses[0].match(/;;(.*)/)
         unless response.nil?
             @response_body = response[1]
         else
-            @response_body == nil
+            @response_body = nil
         end
     end
 
@@ -150,9 +165,9 @@ class Generator
         while requests.length != 0 && responses.length != 0
             get_request_composition(requests)
             get_response_composition(responses)
-            if request_dest == host && response_host == host #=> rule inOut
+            if request_dest == host && response_host == host
                 rule_type = "inOut"
-            elsif request_host == host #=> rule outIn
+            elsif request_host == host
                 rule_type = "outIn"
                 @response_status = nil
                 @response_headers = nil
@@ -211,4 +226,4 @@ end
 
 
 generator = Generator.new
-generator.start("./test2")
+generator.start("./brut")
