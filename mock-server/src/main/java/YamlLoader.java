@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.parser.ParserException;
 
 
 public class YamlLoader {
@@ -18,6 +19,8 @@ public class YamlLoader {
             test = parser.load(yaml);
         } catch (ClassCastException e) {
             throw new IllegalArgumentException("Body must be a list.");
+        } catch (ParserException e) {
+            throw new IllegalArgumentException(e);
         }
 
         if (test == null) throw new IllegalArgumentException("Body must not be empty");
