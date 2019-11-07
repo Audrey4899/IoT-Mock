@@ -45,6 +45,10 @@ public class OutputRequest extends Thread {
         }
     }
 
+    /**
+     * Send an HTTP Request in a new Thread
+     * @param request
+     */
     private void requestAsync(HttpRequest request) {
         new Thread(() -> {
             try {
