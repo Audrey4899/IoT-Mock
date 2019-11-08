@@ -15,13 +15,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @WebServlet(urlPatterns = {"/*"})
 public class WebService extends HttpServlet {
     private Javalin app;
     private List<Component> components;
+    private Map<String, InOutHandler> handlers = new HashMap<>();
 
     public WebService() {
         app = Javalin.createStandalone();
@@ -42,7 +45,7 @@ public class WebService extends HttpServlet {
     private Handler addRulesHandler() {
         return ctx -> {
             Loader loader;
-            if(Objects.equals(ctx.header("Content-Type"), "text/yaml")) {
+            if (Objects.equals(ctx.header("Content-Type"), "text/yaml")) {
                 loader = new YamlLoader();
             } else {
                 throw new LoaderException("Wrong content type");
@@ -55,16 +58,24 @@ public class WebService extends HttpServlet {
 
     private void initRules(List<Rule> rules) {
         rules.forEach(rule -> {
-            if(rule instanceof InOutRule) {
-                app.addHandler(HandlerType.valueOf(rule.getRequest().getMethod()), rule.getRequest().getPath(), ctx -> {
-                    ctx.status(rule.getResponse().getStatus());
-                    ctx.result(rule.getResponse().getBody());
-                    rule.getResponse().getHeaders().forEach(ctx::header);
-                });
-            } else if(rule instanceof OutInRule) {
+            if (rule instanceof InOutRule) {
+                addHandler((InOutRule) rule);
+            } else if (rule instanceof OutInRule) {
                 new OutputRequest((OutInRule) rule).start();
             }
         });
+    }
+
+    private void addHandler(InOutRule rule) {
+        String simplePath = rule.getRequest().getPath().split("\\?")[0];
+        if (handlers.containsKey(simplePath)) {
+            handlers.get(simplePath).addRule(rule);
+        } else {
+            InOutHandler handler = new InOutHandler();
+            handler.addRule(rule);
+            app.addHandler(HandlerType.valueOf(rule.getRequest().getMethod()), simplePath, handler);
+            handlers.put(simplePath, handler);
+        }
     }
 
     @Override
