@@ -116,6 +116,9 @@ public class YamlLoader implements Loader {
      */
     private <T> T getCheckAndCast(Map m, String key, Class<T> type) throws LoaderException {
         try {
+            if(m.get(key) instanceof Integer && type.equals(Long.class)) {
+                return type.cast(((Integer) m.get(key)).longValue());
+            }
             return type.cast(m.get(key));
         } catch (ClassCastException e) {
             throw new LoaderException(String.format("Wrong type for '%s', expected %s", key, type.getSimpleName()));
