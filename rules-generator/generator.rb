@@ -99,11 +99,9 @@ class Generator
     end
 
     def get_request_composition(requests)
-        request = requests[0].match(/(Host=(([0-9]{1,3}\.)+[0-9]{1,3})).*(Dest=(([0-9]{1,3}\.)+[0-9]{1,3})).*(Verb=([A-Z]+))(\/[^\s]+)/)
-        @request_host = request[2]
-        @request_dest = request[5]
-        @request_method = request[8]
-        @request_path = request[9]
+        @request_host = requests[0].match(/Host=([^;]*)/)[1]
+        @request_dest = requests[0].match(/Dest=([^;]*)/)[1]
+        @request_method = requests[0].match(/Verb=([^;]*)/)[1]
 
         request = requests[0].match(/HTTP\/.+\s\((.*)\)/)
         unless request.nil?
@@ -144,11 +142,11 @@ class Generator
         rules.each do |rule|
             rules_hash << rule.to_json
         end
-        puts JSON.pretty_generate(rules_hash)
+        File.open("rules.json", "w") { |file| file.puts JSON.pretty_generate(rules_hash)}
     end
 
     def create_rules
-        @host = "192.168.43.76" #To test code(only with "brut" file)
+        @host = "192.168.43.76" #To test code
         requests = Array.new
         responses = Array.new
         file_data.each do |line|
@@ -226,4 +224,4 @@ end
 
 
 generator = Generator.new
-generator.start("./brut")
+generator.start("./formatted")
