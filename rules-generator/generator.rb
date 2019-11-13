@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'json'
+require 'yaml'
 
 class Rule
     attr_reader :type
@@ -26,7 +27,7 @@ class Rule
         true
     end
 
-    def to_json(options = {})
+    def get_rule_hash
         @rule_hash = {
             "type"=> @type,
             "req"=> {
@@ -87,12 +88,12 @@ class Generator
         puts "Choose the host adress: "
         paths.each { |line| puts line }
         puts ""
-        @host = gets.chomp
+        @host = $stdin.gets.chomp
         while !paths.include? host
             puts "Error: the chosen adress doesn't exist.\nChoose the host adress: "
             paths.each { |line| puts line }
             puts ""
-            @host = gets.chomp
+            @host = $stdin.gets.chomp
             puts ""
         end
         puts "=> " + host + " has been chosen like host adress."
@@ -170,16 +171,22 @@ class Generator
         end
     end
 
-    def rules_to_json
+    def save_rule
         rules_hash = Array.new
         rules.each do |rule|
-            rules_hash << rule.to_json
+            rules_hash << rule.get_rule_hash
         end
-        File.open("rules.json", "w") { |file| file.puts JSON.pretty_generate(rules_hash)}
+        File.open(file_name + "." + file_type, "w") do |file|
+            if file_type == "json"
+                file.puts JSON.pretty_generate(rules_hash)
+            else
+                file.write(rules_hash.to_yaml)
+            end
+        end
     end
 
     def create_rules
-        @host = "192.168.43.76" #To test code
+        #@host = "192.168.43.76"
         requests = Array.new
         responses = Array.new
         file_data.each do |line|
@@ -230,30 +237,37 @@ class Generator
             requests.shift
             responses.shift
         end
-        rules_to_json
+        save_rule
     end
 
     def start(path)
         read_file(path)
-        #ask_hostadress
+        ask_hostadress
         create_rules
     end
 end
 
-
-=begin
-if ARGV.length != 3
-    if ARGV.length == 0
-        generator = Generator.new
+#Main
+case ARGV.length
+when 1
+    generator = Generator.new
+    generator.start(ARGV[0])
+when 2
+    if ARGV[1] == "yaml" || ARGV[1] == "json"
+        generator = Generator.new(:file_type => ARGV[1])
     else
-        puts "Use: generator.rb dest_filename dest_filetype\nOr generator.rb => for default file: rules.json"
-        exit
+        generator = Generator.new(:file_name => ARGV[1])
+    end
+    generator.start(ARGV[0])
+when 3
+    if ARGV[2] == "yaml" || ARGV[2] == "json" 
+        generator = Generator.new(:file_name => ARGV[1], :file_type => ARGV[2])
+        generator.start(ARGV[0]) 
+    else
+        puts "How to use the script: (default destination file name and type: 'rules.json')\n=> generator.rb <path_to_file> (optional: <dest_file_name> <dest_file_type: 'yaml' or 'json'>)\n"
+        exit 
     end
 else
-    generator = Generator.new(:file_name => ARGV[0], :file_type => ARGV[1])
+    puts "How to use the script: (default destination file name and type: 'rules.json')\n=> generator.rb <path_to_file> (optional: <dest_file_name> <dest_file_type: 'yaml' or 'json'>)\n"
+    exit 
 end
-=end
-
-
-generator = Generator.new
-generator.start("./formatted")
