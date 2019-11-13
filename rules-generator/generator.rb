@@ -28,28 +28,28 @@ class Rule
 
     def to_json(options = {})
         @rule_hash = {
-            "type"=> @type.to_s.delete("@"),
+            "type"=> @type,
             "req"=> {
-                "method"=> @request_method.to_s.delete("@"),
-                "path"=> @request_path.to_s.delete("@")
+                "method"=> @request_method,
+                "path"=> @request_path
             }
         }
         unless request_headers.nil?
             @rule_hash["req"].merge!({"headers"=> {}})
-            @rule_hash["req"]["headers"].merge!({"Content-Type" => @request_headers.to_s.delete("@")})
+            @rule_hash["req"]["headers"].merge!(@request_headers)
         end
         unless request_body.nil? || request_body.empty?
-            @rule_hash["req"].merge!({"body"=> @request_body.to_s.delete("@")})
+            @rule_hash["req"].merge!({"body"=> @request_body})
         end
         if @type == "inOut"
             @rule_hash.merge!({"res"=> {}})
             @rule_hash["res"].merge!({"status"=> @response_status.to_i}) 
             unless response_headers.nil?
                 @rule_hash["res"].merge!({"headers"=> {}})
-                @rule_hash["res"]["headers"].merge!({"Content-Type" => @response_headers.to_s.delete("@")})
+                @rule_hash["res"]["headers"].merge!(@response_headers)
             end
             unless response_body.nil? || response_body.empty?
-                @rule_hash["res"].merge!({"body"=> @response_body.to_s.delete("@")})
+                @rule_hash["res"].merge!({"body"=> @response_body})
             end
         end
         return @rule_hash
@@ -99,41 +99,74 @@ class Generator
     end
 
     def get_request_composition(requests)
-        @request_host = requests[0].match(/Host=([^;]*)/)[1]
-        @request_dest = requests[0].match(/Dest=([^;]*)/)[1]
-        @request_method = requests[0].match(/Verb=([^;]*)/)[1]
-
-        request = requests[0].match(/HTTP\/.+\s\((.*)\)/)
-        unless request.nil?
-            @request_headers = request[1]
-        else
-            @request_headers = nil
+        request = requests[0].split("@")
+        @request_object = request[0][/^.*\(/].tr("(","")
+        request[0][/^.*\(/] = ""
+        request[request.length-1][/\)/] = ""
+        key_value = {}
+        request.each do |string|
+            unless string.split("=")[0] == "Uri"
+                key_value[string.split("=")[0]] = string.split("=")[1]
+            else
+                key_value["Uri"] = string.split("Uri=")[1]
+            end
         end
-        request = requests[0].match(/;;(.*)/)
-        unless request.nil?
-            @request_body = request[1]
-        else
-            @request_body = nil
+        @request_host = key_value["Host"]
+        key_value.delete("Host")
+        @request_dest = key_value["Dest"]
+        key_value.delete("Dest")
+        @request_method = key_value["Verb"]
+        key_value.delete("Verb")
+        @request_path = key_value["Uri"]
+        key_value.delete("Uri")
+        @request_headers = {}
+        @request_body = nil
+        while key_value.size != 0
+            if key_value.keys[0] == "contents"
+                @request_body = key_value.values[0]
+            else
+                @request_headers[key_value.keys[0]] = key_value.values[0]
+            end
+            key_value.delete(key_value.keys[0])
+        end
+        if @request_headers.size < 1
+            @request_headers = nil
         end
     end
 
     def get_response_composition(responses)
-        response = responses[0].match(/(Host=(([0-9]{1,3}\.)+[0-9]{1,3})).*(Dest=(([0-9]{1,3}\.)+[0-9]{1,3})).*(status=([0-9]{3}))/)
-        @response_host = response[2]
-        @response_dest = response[5]
-        @response_status = response[8]
-
-        response = responses[0].match(/HTTP\/.+\s\((.*)\)/)
-        unless response.nil?
-            @response_headers = response[1]
-        else
-            @response_headers = nil
+        response = responses[0].split("@")
+        @response_object = response[0][/^.*\(/].tr("(","")
+        response[0][/^.*\(/] = ""
+        response[response.length-1][/\)/] = ""
+        key_value = {}
+        response.each do |string|
+            unless string.split("=")[0] == "contents"
+                key_value[string.split("=")[0]] = string.split("=")[1]
+            else
+                key_value["contents"] = string.split("contents=")[1]
+            end
         end
-        response = responses[0].match(/;;(.*)/)
-        unless response.nil?
-            @response_body = response[1]
-        else
-            @response_body = nil
+        @response_host = key_value["Host"]
+        key_value.delete("Host")
+        @response_dest = key_value["Dest"]
+        key_value.delete("Dest")
+        @response_status = key_value["status"]
+        key_value.delete("status")
+        @response_response = key_value["response"]
+        key_value.delete("response")
+        @response_headers = {}
+        @response_body = nil
+        while key_value.size != 0
+            if key_value.keys[0] == "contents"
+                @response_body = key_value.values[0]
+            else
+                @response_headers[key_value.keys[0]] = key_value.values[0]
+            end
+            key_value.delete(key_value.keys[0])
+        end
+        if @response_headers.size < 1
+            @response_headers = nil
         end
     end
 
@@ -213,8 +246,7 @@ if ARGV.length != 3
     if ARGV.length == 0
         generator = Generator.new
     else
-        puts "Use: generator.rb dest_filename dest_filetype"
-        puts "Or generator.rb => for default file: rules.json"
+        puts "Use: generator.rb dest_filename dest_filetype\nOr generator.rb => for default file: rules.json"
         exit
     end
 else
