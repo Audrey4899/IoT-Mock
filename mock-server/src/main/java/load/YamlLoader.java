@@ -69,9 +69,8 @@ public class YamlLoader implements Loader {
      * @return The loaded InOutRule
      */
     private InOutRule loadInOut(Map rule) throws LoaderException {
-        Request req = loadRequest(rule);
-        Response res = loadResponse(rule);
-        if (req == null || res == null) throw new LoaderException("Missing request or response");
+        Request req = loadRequest(getCheckAndCastNotNull(rule, KEY_REQUEST, Map.class));
+        Response res = loadResponse(getCheckAndCastNotNull(rule, KEY_RESPONSE, Map.class));
         if (!req.getPath().startsWith("/"))
             throw new LoaderException(String.format("Wrong path format: '%s'. Must start with /", req.getPath()));
         return new InOutRule(req, res);
@@ -84,9 +83,8 @@ public class YamlLoader implements Loader {
      * @return The loaded InOutRule
      */
     private OutInRule loadOutIn(Map rule) throws LoaderException {
-        Request req = loadRequest(rule);
-        Response res = loadResponse(rule);
-        if (req == null) throw new LoaderException("Missing request");
+        Request req = loadRequest(getCheckAndCastNotNull(rule, KEY_REQUEST, Map.class));
+        Response res = loadResponse(getCheckAndCast(rule, KEY_RESPONSE, Map.class));
         if (!req.getPath().matches("^https?://.*$"))
             throw new LoaderException(String.format("Wrong path format: '%s'. Must start with http:// or https://", req.getPath()));
         Long timeout = getCheckAndCast(rule, KEY_TIMEOUT, Long.class);
@@ -98,14 +96,14 @@ public class YamlLoader implements Loader {
     /**
      * Load a Request
      *
-     * @param rule The parsed rule containing the request
+     * @param req The request object as a Map
      * @return The loaded Request
      */
-    private Request loadRequest(Map rule) throws LoaderException {
-        Map req = getCheckAndCast(rule, KEY_REQUEST, Map.class);
+    private Request loadRequest(Map req) throws LoaderException {
         if (req == null) return null;
 
         String method = getCheckAndCastNotNull(req, KEY_METHOD, String.class);
+        if(method.isEmpty()) throw new LoaderException(String.format("Parameter '%s' cannot be empty.", KEY_METHOD));
         String path = getCheckAndCastNotNull(req, KEY_PATH, String.class);
         Map<String, String> headers = getCheckAndCast(req, KEY_HEADERS, Map.class);
         String body = getCheckAndCast(req, KEY_BODY, String.class);
@@ -115,14 +113,14 @@ public class YamlLoader implements Loader {
     /**
      * Load a Response
      *
-     * @param rule The parsed rule containing the response
+     * @param res The response object as a Map
      * @return The loaded Response
      */
-    private Response loadResponse(Map rule) throws LoaderException {
-        Map res = getCheckAndCast(rule, KEY_RESPONSE, Map.class);
+    private Response loadResponse(Map res) throws LoaderException {
         if (res == null) return null;
 
         Integer status = getCheckAndCastNotNull(res, KEY_STATUS, Integer.class);
+        if(status < 100 || status >= 600) throw new LoaderException("Wrong status code. Must be between 100 and 600.");
         Map<String, String> headers = getCheckAndCast(res, KEY_HEADERS, Map.class);
         String body = getCheckAndCast(res, KEY_BODY, String.class);
         return new Response(status, headers, body);

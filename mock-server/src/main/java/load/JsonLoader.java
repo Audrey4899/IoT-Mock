@@ -1,8 +1,10 @@
 package load;
+
 import model.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,23 +21,21 @@ public class JsonLoader implements Loader {
     public List<Rule> load(String json) throws LoaderException {
         List<Rule> rules = new ArrayList<>();
         JSONArray array;
-        try{
+        try {
             array = new JSONArray(json);
-        }catch (ClassCastException e){
+        } catch (ClassCastException e) {
             throw new LoaderException("Body must be a list.");
-        }catch (JSONException e){
+        } catch (JSONException e) {
             throw new LoaderException("Missing body");
         }
-        for (int i = 0; i < array.length(); i++){
+        for (int i = 0; i < array.length(); i++) {
             JSONObject rule = array.getJSONObject(i);
             String type = getCheckAndCastNotNull(rule, "type", String.class);
-            if (type.equals("inOut")){
+            if (type.equals("inOut")) {
                 rules.add(loadInOut(rule));
-            }
-            else if (type.equals("outIn")){
+            } else if (type.equals("outIn")) {
                 rules.add(loadOutIn(rule));
-            }
-            else {
+            } else {
                 throw new LoaderException("Unsupported rule type");
             }
         }
@@ -49,10 +49,11 @@ public class JsonLoader implements Loader {
      * @return The loaded InOutRule
      */
     private InOutRule loadInOut(JSONObject rule) throws LoaderException {
-        Request req = loadRequest(rule);
-        Response res = loadResponse(rule);
+        Request req = loadRequest(getCheckAndCastNotNull(rule, "req", JSONObject.class));
+        Response res = loadResponse(getCheckAndCastNotNull(rule, "res", JSONObject.class));
         if (req == null || res == null) throw new LoaderException();
-        if(!req.getPath().startsWith("/")) throw new LoaderException(String.format("Wrong path format: '%s'. Must start with /", req.getPath()));
+        if (!req.getPath().startsWith("/"))
+            throw new LoaderException(String.format("Wrong path format: '%s'. Must start with /", req.getPath()));
         return new InOutRule(req, res);
     }
 
@@ -63,10 +64,11 @@ public class JsonLoader implements Loader {
      * @return The loaded InOutRule
      */
     private OutInRule loadOutIn(JSONObject rule) throws LoaderException {
-        Request req = loadRequest(rule);
-        Response res = loadResponse(rule);
+        Request req = loadRequest(getCheckAndCastNotNull(rule, "req", JSONObject.class));
+        Response res = loadResponse(getCheckAndCast(rule, "res", JSONObject.class));
         if (req == null) throw new LoaderException();
-        if(!req.getPath().matches("^https?://.*$")) throw new LoaderException(String.format("Wrong path format: '%s'. Must start with http:// or https://", req.getPath()));
+        if (!req.getPath().matches("^https?://.*$"))
+            throw new LoaderException(String.format("Wrong path format: '%s'. Must start with http:// or https://", req.getPath()));
         Long timeout = getCheckAndCast(rule, "timeout", Long.class);
         Integer repeat = getCheckAndCast(rule, "repeat", Integer.class);
         Long interval = getCheckAndCast(rule, "interval", Long.class);
@@ -76,14 +78,14 @@ public class JsonLoader implements Loader {
     /**
      * Load a Request
      *
-     * @param rule The parsed rule containing the request
+     * @param req The request object as a Map
      * @return The loaded Request
      */
-    private Request loadRequest(JSONObject rule) throws LoaderException {
-        JSONObject req = getCheckAndCast(rule, "req", JSONObject.class);
+    private Request loadRequest(JSONObject req) throws LoaderException {
         if (req == null) return null;
 
         String method = getCheckAndCastNotNull(req, "method", String.class);
+        if (method.isEmpty()) throw new LoaderException(String.format("Parameter '%s' cannot be empty.", "method"));
         String path = getCheckAndCastNotNull(req, "path", String.class);
         Map<String, String> headers = loadHeaders(req);
         String body = getCheckAndCast(req, "body", String.class);
@@ -93,14 +95,14 @@ public class JsonLoader implements Loader {
     /**
      * Load a Response
      *
-     * @param rule The parsed rule containing the response
+     * @param res The response object as a Map
      * @return The loaded Response
      */
-    private Response loadResponse(JSONObject rule) throws LoaderException {
-        JSONObject res = getCheckAndCast(rule, "res", JSONObject.class);
+    private Response loadResponse(JSONObject res) throws LoaderException {
         if (res == null) return null;
 
         Integer status = getCheckAndCastNotNull(res, "status", Integer.class);
+        if (status < 100 || status >= 600) throw new LoaderException("Wrong status code. Must be between 100 and 600.");
         Map<String, String> headers = loadHeaders(res);
         String body = getCheckAndCast(res, "body", String.class);
         return new Response(status, headers, body);
@@ -115,8 +117,8 @@ public class JsonLoader implements Loader {
     private Map<String, String> loadHeaders(JSONObject o) throws LoaderException {
         JSONObject headersRes = getCheckAndCast(o, "headers", JSONObject.class);
         Map<String, String> headers = new TreeMap<>();
-        if (headersRes != null){
-            if (headersRes.keys().hasNext()){
+        if (headersRes != null) {
+            if (headersRes.keys().hasNext()) {
                 String keyName = headersRes.keys().next();
                 String content = headersRes.getString(keyName);
                 headers.put(keyName, content);
@@ -137,8 +139,8 @@ public class JsonLoader implements Loader {
      */
     private <T> T getCheckAndCast(JSONObject o, String key, Class<T> type) throws LoaderException {
         try {
-            if (o.has(key)){
-                if (o.get(key) instanceof Integer && type.equals(Long.class)){
+            if (o.has(key)) {
+                if (o.get(key) instanceof Integer && type.equals(Long.class)) {
                     return type.cast(((Integer) o.get(key)).longValue());
                 }
                 return type.cast(o.get(key));
