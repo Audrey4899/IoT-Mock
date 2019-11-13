@@ -1,6 +1,7 @@
 package load;
 import model.*;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,156 +9,158 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class JsonLoader implements Loader {
+    /**
+     * Parse and deserialize a JSON formatted String
+     *
+     * @param json The JSON formatted String from which to load the rules
+     * @return The list of loaded rules
+     */
     @Override
-    public List<Rule> load(String json){
+    public List<Rule> load(String json) throws LoaderException {
         List<Rule> rules = new ArrayList<>();
-        JSONArray array = new JSONArray(json);
+        JSONArray array;
+        try{
+            array = new JSONArray(json);
+        }catch (ClassCastException e){
+            throw new LoaderException("Body must be a list.");
+        }catch (JSONException e){
+            throw new LoaderException("Missing body");
+        }
         for (int i = 0; i < array.length(); i++){
-            try{
-                JSONObject rule = array.getJSONObject(i);
-                if (!rule.has("type")) {
-                    throw new IllegalArgumentException("La requête doit contenir un type");
-                }
-                String type = ((String) rule.get("type"));
-                if (type.isEmpty()) {
-                    throw new IllegalArgumentException("Le type de la requête doit être spécifié");
-                }
-                if (type.equals("inOut")) {
-                    Request req;
-                    if (rule.has("req")) {
-                        if (!rule.getJSONObject("req").isEmpty()) {
-                            JSONObject request = rule.getJSONObject("req");
-                            req = parseRequest(request);
-                        } else {
-                            throw new IllegalArgumentException("inOut doit spécifier le contenu de la requête reçue.");
-                        }
-                    } else {
-                        throw new IllegalArgumentException("inOut doit contenir la requête reçue");
-                    }
-                    Response res;
-                    if (rule.has("res")) {
-                        if (!rule.getJSONObject("res").isEmpty()) {
-                            JSONObject response = rule.getJSONObject("res");
-                            res = parseResponse(response);
-                        } else {
-                            throw new IllegalArgumentException("inOut doit contenir la réponse à envoyer");
-                        }
-                    } else {
-                        throw new IllegalArgumentException("inOut doit spécifier le contenu de la réponse à envoyer.");
-                    }
-                    rules.add(new InOutRule(req, res));
-                }
-                if (type.equals("outIn")) {
-                    Request req;
-                    long timeout;
-                    int repeat;
-                    long interval;
-                    if (rule.has("req")) {
-                        if (!rule.getJSONObject("req").isEmpty()) {
-                            //Request
-                            JSONObject request = rule.getJSONObject("req");
-                            if (request.has("method") && request.has("path") && request.has("timeout")
-                                    && request.has("repeat") && request.has("interval")) {
-                                String method = ((String) request.get("method"));
-                                String path = ((String) request.get("path"));
-                                String body = ((String) request.get("body"));
-                                JSONObject headersObj = request.getJSONObject("headers");
-                                Map<String, String> headers = parseHeaders(headersObj);
-                                req = new Request(method, path, headers, body);
-                                timeout = ((Long) request.get("timeout"));
-                                repeat = ((int) request.get("repeat"));
-                                interval = ((Long) request.get("interval"));
-                            } else {
-                                throw new IllegalArgumentException("La requête à envoyer doit contenir les champs method et path ainsi que timeout, interval et repeat");
-                            }
-                        } else {
-                            throw new IllegalArgumentException("outIn doit spécifier le contenu de la requête à envoyer");
-                        }
-                    } else {
-                        throw new IllegalArgumentException("outIn doit contenir la requête à envoyer");
-                    }
-                    Response res;
-                    if (rule.has("res")) {
-                        if (!rule.getJSONObject("res").isEmpty()) {
-                            //Response
-                            JSONObject response = rule.getJSONObject("res");
-                            res = parseResponse(response);
-                        } else {
-                            throw new IllegalArgumentException("outIn doit contenir une réponse");
-                        }
-                    } else {
-                        throw new IllegalArgumentException("outIn doit spécifier le contenu de la réponse");
-                    }
-                    rules.add(new OutInRule(req, res, timeout, repeat, interval));
-                }
+            JSONObject rule = array.getJSONObject(i);
+            String type = getCheckAndCastNotNull(rule, "type", String.class);
+            if (type.equals("inOut")){
+                rules.add(loadInOut(rule));
             }
-            catch (ClassCastException e){
-                e.getMessage();
+            else if (type.equals("outIn")){
+                rules.add(loadOutIn(rule));
+            }
+            else {
+                throw new LoaderException("Unsupported rule type");
             }
         }
         return rules;
     }
-    private Map<String, String> parseHeaders(JSONObject headersObj){
+
+    /**
+     * Load an InOutRule
+     *
+     * @param rule The parsed rule
+     * @return The loaded InOutRule
+     */
+    private InOutRule loadInOut(JSONObject rule) throws LoaderException {
+        Request req = loadRequest(rule);
+        Response res = loadResponse(rule);
+        if (req == null || res == null) throw new LoaderException();
+        if(!req.getPath().startsWith("/")) throw new LoaderException(String.format("Wrong path format: '%s'. Must start with /", req.getPath()));
+        return new InOutRule(req, res);
+    }
+
+    /**
+     * Load an OutInRule
+     *
+     * @param rule The parsed rule
+     * @return The loaded InOutRule
+     */
+    private OutInRule loadOutIn(JSONObject rule) throws LoaderException {
+        Request req = loadRequest(rule);
+        Response res = loadResponse(rule);
+        if (req == null) throw new LoaderException();
+        if(!req.getPath().matches("^https?://.*$")) throw new LoaderException(String.format("Wrong path format: '%s'. Must start with http:// or https://", req.getPath()));
+        Long timeout = getCheckAndCast(rule, "timeout", Long.class);
+        Integer repeat = getCheckAndCast(rule, "repeat", Integer.class);
+        Long interval = getCheckAndCast(rule, "interval", Long.class);
+        return new OutInRule(req, res, (timeout != null) ? timeout : 0, (repeat != null) ? repeat : 1, (interval != null) ? interval : 1000);
+    }
+
+    /**
+     * Load a Request
+     *
+     * @param rule The parsed rule containing the request
+     * @return The loaded Request
+     */
+    private Request loadRequest(JSONObject rule) throws LoaderException {
+        JSONObject req = getCheckAndCast(rule, "req", JSONObject.class);
+        if (req == null) return null;
+
+        String method = getCheckAndCastNotNull(req, "method", String.class);
+        String path = getCheckAndCastNotNull(req, "path", String.class);
+        Map<String, String> headers = loadHeaders(req);
+        String body = getCheckAndCast(req, "body", String.class);
+        return new Request(method, path, headers, body);
+    }
+
+    /**
+     * Load a Response
+     *
+     * @param rule The parsed rule containing the response
+     * @return The loaded Response
+     */
+    private Response loadResponse(JSONObject rule) throws LoaderException {
+        JSONObject res = getCheckAndCast(rule, "res", JSONObject.class);
+        if (res == null) return null;
+
+        Integer status = getCheckAndCastNotNull(res, "status", Integer.class);
+        Map<String, String> headers = loadHeaders(res);
+        String body = getCheckAndCast(res, "body", String.class);
+        return new Response(status, headers, body);
+    }
+
+    /**
+     * Load a Headers
+     *
+     * @param o The JSONObject to get it headers
+     * @return The loaded Headers
+     */
+    private Map<String, String> loadHeaders(JSONObject o) throws LoaderException {
+        JSONObject headersRes = getCheckAndCast(o, "headers", JSONObject.class);
         Map<String, String> headers = new TreeMap<>();
-        if (headersObj.keys().hasNext()){
-            int nbKeys = headersObj.names().length();
-            for (int i = 0; i < nbKeys; i++){
-                String keyName = (String) headersObj.names().get(i);
-                String content = headersObj.getString(keyName);
+        if (headersRes != null){
+            if (headersRes.keys().hasNext()){
+                String keyName = headersRes.keys().next();
+                String content = headersRes.getString(keyName);
                 headers.put(keyName, content);
             }
-        }
-        return headers;
+            return headers;
+        } else
+            return null;
     }
-    private Request parseRequest(JSONObject request){
-        if (request.has("method") && request.has("path")) {
-            String method = ((String) request.get("method"));
-            String path = ((String) request.get("path"));
-            Map<String, String> headers;
-            String body;
-            if (!request.has("body") && request.has("headers")){
-                JSONObject headersObj = request.getJSONObject("headers");
-                headers = parseHeaders(headersObj);
-                return new Request(method, path, headers, null);
-            }
-            if (!request.has("headers") && request.has("body")){
-                body = ((String) request.get("body"));
-                return new Request(method, path, null, body);
-            }
-            if (!request.has("headers") && !request.has("body")){
-                return new Request(method, path, null, null);
-            }
-            JSONObject headersObj = request.getJSONObject("headers");
-            headers = parseHeaders(headersObj);
-            body = ((String) request.get("body"));
-            return new Request(method, path, headers, body);
-        } else {
-            throw new IllegalArgumentException("La requête reçue doit contenir les champs method et path");
+
+    /**
+     * Get the key's value from the JSONObject and cast it
+     *
+     * @param o    The JSONObject to get the value from
+     * @param key  The get of the value to get
+     * @param type The type of the value to return
+     * @param <T>  The type of the value to return
+     * @return The casted value
+     */
+    private <T> T getCheckAndCast(JSONObject o, String key, Class<T> type) throws LoaderException {
+        try {
+            if (o.has(key)){
+                if (o.get(key) instanceof Integer && type.equals(Long.class)){
+                    return type.cast(((Integer) o.get(key)).longValue());
+                }
+                return type.cast(o.get(key));
+            } else
+                return null;
+        } catch (ClassCastException e) {
+            throw new LoaderException(String.format("Wrong type for '%s', expected %s", key, type.getSimpleName()));
         }
     }
-    private Response parseResponse(JSONObject response){
-        if (response.has("status")) {
-            Map<String, String> headers;
-            String body;
-            int status = response.getInt("status");
-            if (!response.has("body") && response.has("headers")){
-                JSONObject headersObj = response.getJSONObject("headers");
-                headers = parseHeaders(headersObj);
-                return new Response(status, headers,null);
-            }
-            if (!response.has("headers") && response.has("body")){
-                body = ((String) response.get("body"));
-                return new Response(status, null, body);
-            }
-            if (!response.has("headers") && !response.has("body")){
-                return new Response(status,null, null);
-            }
-            JSONObject headersObj = response.getJSONObject("headers");
-            headers = parseHeaders(headersObj);
-            body = ((String) response.get("body"));
-            return new Response(status, headers, body);
-        } else {
-            throw new IllegalArgumentException("La réponse doit au moins contenir un status");
-        }
+
+    /**
+     * Get the key's value from the JSONObject and cast it
+     *
+     * @param o    The JSONObject to get the value from
+     * @param key  The get of the value to get
+     * @param type The type of the value to return
+     * @param <T>  The type of the value to return
+     * @return The casted non-null value
+     */
+    private <T> T getCheckAndCastNotNull(JSONObject o, String key, Class<T> type) throws LoaderException {
+        T t = getCheckAndCast(o, key, type);
+        if (t == null) throw new LoaderException(String.format("Missing parameter '%s'", key));
+        return t;
     }
 }

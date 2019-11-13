@@ -1,6 +1,7 @@
 import io.javalin.Javalin;
 import io.javalin.http.Handler;
 import io.javalin.http.HandlerType;
+import load.JsonLoader;
 import load.Loader;
 import load.LoaderException;
 import load.YamlLoader;
@@ -47,7 +48,11 @@ public class WebService extends HttpServlet {
             Loader loader;
             if (Objects.equals(ctx.header("Content-Type"), "text/yaml")) {
                 loader = new YamlLoader();
-            } else {
+            }
+            else if (Objects.equals(ctx.header("Content-Type"), "application/json")){
+                loader = new JsonLoader();
+            }
+            else {
                 throw new LoaderException("Wrong content type");
             }
             List<Rule> rules = loader.load(ctx.body());
