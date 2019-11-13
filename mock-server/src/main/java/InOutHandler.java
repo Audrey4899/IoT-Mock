@@ -3,13 +3,19 @@ import io.javalin.http.Handler;
 import model.InOutRule;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class InOutHandler implements Handler {
-    private Set<InOutRule> rules = new HashSet<>();
+    private List<InOutRule> rules = new ArrayList<>();
 
-    public void addRule(InOutRule rule) {
+    public void addRule(InOutRule rule) throws RuleAlreadyExistsException {
+        for (InOutRule r : rules) {
+            if (r.getRequest().getPath().equals(rule.getRequest().getPath())
+                    && r.getRequest().getHeaders().equals(rule.getRequest().getHeaders())
+                    && r.getRequest().getBody().equals(rule.getRequest().getBody())
+            ) throw new RuleAlreadyExistsException("Rule already exists");
+        }
         rules.add(rule);
     }
 

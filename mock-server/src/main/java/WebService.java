@@ -29,10 +29,8 @@ public class WebService extends HttpServlet {
 
     public WebService() {
         app = Javalin.createStandalone();
-        app.exception(LoaderException.class, (exception, ctx) -> {
-            ctx.status(400);
-            ctx.result(List.of(exception.getClass().toString(), (exception.getMessage() != null) ? exception.getMessage() : "").toString());
-        });
+        app.exception(LoaderException.class, ExceptionHandlers.genericHandler(400));
+        app.exception(RuleAlreadyExistsException.class, ExceptionHandlers.genericHandler(400));
         app.exception(Exception.class, (exception, ctx) -> {
             exception.printStackTrace();
             ctx.status(500);
@@ -61,25 +59,26 @@ public class WebService extends HttpServlet {
         };
     }
 
-    private void initRules(List<Rule> rules) {
-        rules.forEach(rule -> {
+    private void initRules(List<Rule> rules) throws RuleAlreadyExistsException {
+        for (Rule rule: rules) {
             if (rule instanceof InOutRule) {
                 addHandler((InOutRule) rule);
             } else if (rule instanceof OutInRule) {
                 new OutputRequest((OutInRule) rule).start();
             }
-        });
+        }
     }
 
-    private void addHandler(InOutRule rule) {
+    private void addHandler(InOutRule rule) throws RuleAlreadyExistsException {
         String simplePath = rule.getRequest().getPath().split("\\?")[0];
-        if (handlers.containsKey(simplePath)) {
-            handlers.get(simplePath).addRule(rule);
+        String id = rule.getRequest().getMethod() + simplePath;
+        if (handlers.containsKey(id)) {
+            handlers.get(id).addRule(rule);
         } else {
             InOutHandler handler = new InOutHandler();
             handler.addRule(rule);
             app.addHandler(HandlerType.valueOf(rule.getRequest().getMethod()), simplePath, handler);
-            handlers.put(simplePath, handler);
+            handlers.put(id, handler);
         }
     }
 
