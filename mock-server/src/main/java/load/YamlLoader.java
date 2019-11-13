@@ -4,10 +4,7 @@ import model.*;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 
 public class YamlLoader implements Loader {
@@ -105,7 +102,7 @@ public class YamlLoader implements Loader {
         String method = getCheckAndCastNotNull(req, KEY_METHOD, String.class);
         if(method.isEmpty()) throw new LoaderException(String.format("Parameter '%s' cannot be empty.", KEY_METHOD));
         String path = getCheckAndCastNotNull(req, KEY_PATH, String.class);
-        Map<String, String> headers = getCheckAndCast(req, KEY_HEADERS, Map.class);
+        Map<String, String> headers = loadHeaders(getCheckAndCast(req, KEY_HEADERS, Map.class));
         String body = getCheckAndCast(req, KEY_BODY, String.class);
         return new Request(method, path, headers, body);
     }
@@ -121,9 +118,22 @@ public class YamlLoader implements Loader {
 
         Integer status = getCheckAndCastNotNull(res, KEY_STATUS, Integer.class);
         if(status < 100 || status >= 600) throw new LoaderException("Wrong status code. Must be between 100 and 600.");
-        Map<String, String> headers = getCheckAndCast(res, KEY_HEADERS, Map.class);
+        Map<String, String> headers = loadHeaders(getCheckAndCast(res, KEY_HEADERS, Map.class));
         String body = getCheckAndCast(res, KEY_BODY, String.class);
         return new Response(status, headers, body);
+    }
+
+    private Map<String, String> loadHeaders(Map headers) throws LoaderException {
+        if(headers == null) return null;
+        Map<String, String> h = new HashMap<>();
+        for (Object key: headers.keySet()) {
+            try {
+                h.put((String)key, (String)headers.get(key));
+            } catch (ClassCastException e) {
+                throw new LoaderException("Wrong type for key-value pair in headers, expected 'string: string'");
+            }
+        }
+        return h;
     }
 
     /**
