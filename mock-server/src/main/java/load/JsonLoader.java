@@ -120,7 +120,7 @@ public class JsonLoader implements Loader {
         if (headersRes != null) {
             if (headersRes.keys().hasNext()) {
                 String keyName = headersRes.keys().next();
-                String content = headersRes.getString(keyName);
+                String content = getCheckAndCast(headersRes, keyName, String.class);
                 headers.put(keyName, content);
             }
             return headers;
