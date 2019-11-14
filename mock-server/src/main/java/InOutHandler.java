@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class InOutHandler implements Handler {
     private List<InOutRule> rules = new ArrayList<>();
@@ -29,7 +30,8 @@ public class InOutHandler implements Handler {
             String path = (ctx.queryString() != null) ? String.format("%s?%s", ctx.path(), ctx.queryString()) : rule.getRequest().getPath();
             final boolean[] doesHeadersMatch = {true};
             rule.getRequest().getHeaders().forEach((s, s2) -> {
-                if (!ctx.headerMap().get(s).equals(s2)) {
+                System.out.println(s.getClass());
+                if (!Objects.equals(ctx.headerMap().get(s), s2)) {
                     doesHeadersMatch[0] = false;
                 }
             });
