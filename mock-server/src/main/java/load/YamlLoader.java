@@ -3,6 +3,7 @@ package load;
 import model.*;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
+import org.yaml.snakeyaml.scanner.ScannerException;
 
 import java.util.*;
 
@@ -37,8 +38,8 @@ public class YamlLoader implements Loader {
             parsedRules = parser.load(yaml);
         } catch (ClassCastException e) {
             throw new LoaderException("Body must be a list.");
-        } catch (ParserException e) {
-            throw new LoaderException(e);
+        } catch (ParserException |ScannerException e) {
+            throw new LoaderException("Error while parsing yaml.");
         }
 
         if (parsedRules == null) throw new LoaderException("Body must not be empty");
@@ -46,7 +47,6 @@ public class YamlLoader implements Loader {
         try {
             return loadRules(parsedRules);
         } catch (IllegalArgumentException | NullPointerException e) {
-            e.printStackTrace();
             throw new LoaderException(e.getMessage());
         }
     }

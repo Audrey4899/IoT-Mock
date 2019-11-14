@@ -24,7 +24,6 @@ import java.util.Objects;
 @WebServlet(urlPatterns = {"/*"})
 public class WebService extends HttpServlet {
     private Javalin app;
-    private List<Component> components;
     private Map<String, InOutHandler> handlers = new HashMap<>();
 
     public WebService() {
@@ -38,7 +37,7 @@ public class WebService extends HttpServlet {
         });
 
         app.get("/", ctx -> ctx.result("It works !"));
-        app.post("/addRules", addRulesHandler());
+        app.post("/rules", addRulesHandler());
     }
 
     private Handler addRulesHandler() {
@@ -55,7 +54,7 @@ public class WebService extends HttpServlet {
             }
             List<Rule> rules = loader.load(ctx.body());
             initRules(rules);
-            ctx.result("Rules added");
+            ctx.status(204);
         };
     }
 
@@ -77,7 +76,11 @@ public class WebService extends HttpServlet {
         } else {
             InOutHandler handler = new InOutHandler();
             handler.addRule(rule);
-            app.addHandler(HandlerType.valueOf(rule.getRequest().getMethod()), simplePath, handler);
+            try {
+                app.addHandler(HandlerType.valueOf(rule.getRequest().getMethod()), simplePath, handler);
+            } catch (IllegalArgumentException e) {
+                throw new RuleAlreadyExistsException(String.format("The route '%s -> %s' cannot be created.",rule.getRequest().getMethod(), simplePath));
+            }
             handlers.put(id, handler);
         }
     }
