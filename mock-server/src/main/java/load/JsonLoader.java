@@ -26,7 +26,7 @@ public class JsonLoader implements Loader {
         } catch (ClassCastException e) {
             throw new LoaderException("Body must be a list.");
         } catch (JSONException e) {
-            throw new LoaderException("Missing body");
+            throw new LoaderException("JSON parsing error");
         }
         for (int i = 0; i < array.length(); i++) {
             JSONObject rule = array.getJSONObject(i);
