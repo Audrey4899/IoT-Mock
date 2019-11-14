@@ -31,9 +31,9 @@ public class JsonLoader implements Loader {
         for (int i = 0; i < array.length(); i++) {
             JSONObject rule = array.getJSONObject(i);
             String type = getCheckAndCastNotNull(rule, "type", String.class);
-            if (type.equals("inOut")) {
+            if (type.equals("inout")) {
                 rules.add(loadInOut(rule));
-            } else if (type.equals("outIn")) {
+            } else if (type.equals("outin")) {
                 rules.add(loadOutIn(rule));
             } else {
                 throw new LoaderException("Unsupported rule type");
@@ -49,8 +49,8 @@ public class JsonLoader implements Loader {
      * @return The loaded InOutRule
      */
     private InOutRule loadInOut(JSONObject rule) throws LoaderException {
-        Request req = loadRequest(getCheckAndCastNotNull(rule, "req", JSONObject.class));
-        Response res = loadResponse(getCheckAndCastNotNull(rule, "res", JSONObject.class));
+        Request req = loadRequest(getCheckAndCastNotNull(rule, "request", JSONObject.class));
+        Response res = loadResponse(getCheckAndCastNotNull(rule, "response", JSONObject.class));
         if (req == null || res == null) throw new LoaderException();
         if (!req.getPath().startsWith("/"))
             throw new LoaderException(String.format("Wrong path format: '%s'. Must start with /", req.getPath()));
@@ -64,8 +64,8 @@ public class JsonLoader implements Loader {
      * @return The loaded InOutRule
      */
     private OutInRule loadOutIn(JSONObject rule) throws LoaderException {
-        Request req = loadRequest(getCheckAndCastNotNull(rule, "req", JSONObject.class));
-        Response res = loadResponse(getCheckAndCast(rule, "res", JSONObject.class));
+        Request req = loadRequest(getCheckAndCastNotNull(rule, "request", JSONObject.class));
+        Response res = loadResponse(getCheckAndCast(rule, "response", JSONObject.class));
         if (req == null) throw new LoaderException();
         if (!req.getPath().matches("^https?://.*$"))
             throw new LoaderException(String.format("Wrong path format: '%s'. Must start with http:// or https://", req.getPath()));

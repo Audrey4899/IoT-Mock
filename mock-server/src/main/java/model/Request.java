@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static java.util.Objects.requireNonNull;
+
 public class Request {
     private String method;
     private String path;
@@ -11,10 +13,11 @@ public class Request {
     private String body;
 
     public Request(String method, String path, Map<String, String> headers, String body) {
-        this.method = method;
-        this.path = path;
-        this.headers = (headers != null)? headers : new TreeMap<>();
-        this.body = (body != null)? body : "";
+        this.method = requireNonNull(method, "Parameter method is required.");
+        if(method.isEmpty()) throw new IllegalArgumentException("Parameter method cannot be empty.");
+        this.path = requireNonNull(path, "Parameter path is required.");
+        this.headers = (headers != null) ? headers : new TreeMap<>();
+        this.body = (body != null) ? body : "";
     }
 
     public String getMethod() {
