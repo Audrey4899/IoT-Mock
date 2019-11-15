@@ -5,10 +5,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class JsonLoader implements Loader {
     /**
@@ -28,18 +25,24 @@ public class JsonLoader implements Loader {
         } catch (JSONException e) {
             throw new LoaderException("JSON parsing error");
         }
-        for (int i = 0; i < array.length(); i++) {
-            JSONObject rule = array.getJSONObject(i);
-            String type = getCheckAndCastNotNull(rule, "type", String.class);
-            if (type.equals("inout")) {
-                rules.add(loadInOut(rule));
-            } else if (type.equals("outin")) {
-                rules.add(loadOutIn(rule));
-            } else {
-                throw new LoaderException("Unsupported rule type");
+
+        try {
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject rule = array.getJSONObject(i);
+                String type = getCheckAndCast(rule, "type", String.class);
+                if (type == null) throw new LoaderException("Parameter type is required.");
+                if (type.equals("inout")) {
+                    rules.add(loadInOut(rule));
+                } else if (type.equals("outin")) {
+                    rules.add(loadOutIn(rule));
+                } else {
+                    throw new LoaderException("Unsupported rule type");
+                }
             }
+            return rules;
+        } catch (IllegalArgumentException | NullPointerException e){
+            throw new LoaderException(e.getMessage());
         }
-        return rules;
     }
 
     /**
@@ -49,11 +52,8 @@ public class JsonLoader implements Loader {
      * @return The loaded InOutRule
      */
     private InOutRule loadInOut(JSONObject rule) throws LoaderException {
-        Request req = loadRequest(getCheckAndCastNotNull(rule, "request", JSONObject.class));
-        Response res = loadResponse(getCheckAndCastNotNull(rule, "response", JSONObject.class));
-        if (req == null || res == null) throw new LoaderException();
-        if (!req.getPath().startsWith("/"))
-            throw new LoaderException(String.format("Wrong path format: '%s'. Must start with /", req.getPath()));
+        Request req = loadRequest(getCheckAndCast(rule, "request", JSONObject.class));
+        Response res = loadResponse(getCheckAndCast(rule, "response", JSONObject.class));
         return new InOutRule(req, res);
     }
 
@@ -64,15 +64,12 @@ public class JsonLoader implements Loader {
      * @return The loaded InOutRule
      */
     private OutInRule loadOutIn(JSONObject rule) throws LoaderException {
-        Request req = loadRequest(getCheckAndCastNotNull(rule, "request", JSONObject.class));
+        Request req = loadRequest(getCheckAndCast(rule, "request", JSONObject.class));
         Response res = loadResponse(getCheckAndCast(rule, "response", JSONObject.class));
-        if (req == null) throw new LoaderException();
-        if (!req.getPath().matches("^https?://.*$"))
-            throw new LoaderException(String.format("Wrong path format: '%s'. Must start with http:// or https://", req.getPath()));
         Long timeout = getCheckAndCast(rule, "timeout", Long.class);
         Integer repeat = getCheckAndCast(rule, "repeat", Integer.class);
         Long interval = getCheckAndCast(rule, "interval", Long.class);
-        return new OutInRule(req, res, (timeout != null) ? timeout : 0, (repeat != null) ? repeat : 1, (interval != null) ? interval : 1000);
+        return new OutInRule(req, res, timeout, repeat, interval);
     }
 
     /**
@@ -84,9 +81,8 @@ public class JsonLoader implements Loader {
     private Request loadRequest(JSONObject req) throws LoaderException {
         if (req == null) return null;
 
-        String method = getCheckAndCastNotNull(req, "method", String.class);
-        if (method.isEmpty()) throw new LoaderException(String.format("Parameter '%s' cannot be empty.", "method"));
-        String path = getCheckAndCastNotNull(req, "path", String.class);
+        String method = getCheckAndCast(req, "method", String.class);
+        String path = getCheckAndCast(req, "path", String.class);
         Map<String, String> headers = loadHeaders(req);
         String body = getCheckAndCast(req, "body", String.class);
         return new Request(method, path, headers, body);
@@ -101,8 +97,7 @@ public class JsonLoader implements Loader {
     private Response loadResponse(JSONObject res) throws LoaderException {
         if (res == null) return null;
 
-        Integer status = getCheckAndCastNotNull(res, "status", Integer.class);
-        if (status < 100 || status >= 600) throw new LoaderException("Wrong status code. Must be between 100 and 600.");
+        Integer status = getCheckAndCast(res, "status", Integer.class);
         Map<String, String> headers = loadHeaders(res);
         String body = getCheckAndCast(res, "body", String.class);
         return new Response(status, headers, body);
@@ -115,12 +110,12 @@ public class JsonLoader implements Loader {
      * @return The loaded Headers
      */
     private Map<String, String> loadHeaders(JSONObject o) throws LoaderException {
-        JSONObject headersRes = getCheckAndCast(o, "headers", JSONObject.class);
-        Map<String, String> headers = new TreeMap<>();
-        if (headersRes != null) {
-            if (headersRes.keys().hasNext()) {
-                String keyName = headersRes.keys().next();
-                String content = getCheckAndCast(headersRes, keyName, String.class);
+        JSONObject headersObj = getCheckAndCast(o, "headers", JSONObject.class);
+        Map<String, String> headers = new HashMap<>();
+        if (headersObj != null) {
+            if (headersObj.keys().hasNext()) {
+                String keyName = headersObj.keys().next();
+                String content = getCheckAndCast(headersObj, keyName, String.class);
                 headers.put(keyName, content);
             }
             return headers;
@@ -149,20 +144,5 @@ public class JsonLoader implements Loader {
         } catch (ClassCastException e) {
             throw new LoaderException(String.format("Wrong type for '%s', expected %s", key, type.getSimpleName()));
         }
-    }
-
-    /**
-     * Get the key's value from the JSONObject and cast it
-     *
-     * @param o    The JSONObject to get the value from
-     * @param key  The get of the value to get
-     * @param type The type of the value to return
-     * @param <T>  The type of the value to return
-     * @return The casted non-null value
-     */
-    private <T> T getCheckAndCastNotNull(JSONObject o, String key, Class<T> type) throws LoaderException {
-        T t = getCheckAndCast(o, key, type);
-        if (t == null) throw new LoaderException(String.format("Missing parameter '%s'", key));
-        return t;
     }
 }
