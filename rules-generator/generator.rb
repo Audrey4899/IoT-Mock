@@ -4,13 +4,13 @@ require 'json'
 require 'yaml'
 
 class Rule
-  attr_reader :type
+  attr_reader :rule_type
   attr_reader :request_method, :request_path, :request_headers, :request_body
   attr_reader :response_status, :response_headers, :response_body
   attr_accessor :rule_hash
 
   def initialize(rule_type, request_method, request_path, request_headers, request_body, response_status, response_headers, response_body)
-    @type = rule_type
+    @rule_type = rule_type
     @request_method = request_method
     @request_path = request_path
     @request_headers = request_headers
@@ -21,15 +21,13 @@ class Rule
   end
 
   def equals?(rule)
-    rule.instance_variables.each do |k|
-      return false unless rule.instance_variable_get(k) == instance_variable_get(k)
-    end
+    rule.instance_variables.each { |k| return false unless rule.instance_variable_get(k) == self.instance_variable_get(k) }
     true
   end
 
-  def get_rule_hash
+  def rule_to_hash
     @rule_hash = {
-      'type' => @type,
+      'type' => @rule_type,
       'request' => {
         'method' => @request_method,
         'path' => @request_path
@@ -42,7 +40,7 @@ class Rule
     unless request_body.nil? || request_body.empty?
       @rule_hash['request'].merge!('body' => @request_body)
     end
-    if @type == 'inout'
+    if @rule_type == 'inout'
       @rule_hash.merge!('response' => {})
       @rule_hash['response'].merge!('status' => @response_status.to_i)
       unless response_headers.nil?
@@ -70,43 +68,42 @@ class Generator
   end
 
   def read_file(path)
-    file = File.open(path)
-    @file_data = file.readlines.map(&:chomp)
+    @file_data = File.open(path).readlines.map(&:chomp)
     @paths = []
-    file_data.each do |line|
-      address1 = line.match(/Host=(([0-9]{1,3}\.)+[0-9]{1,3})/)
-      address2 = line.match(/Dest=(([0-9]{1,3}\.)+[0-9]{1,3})/)
-      @paths << address1[1] unless paths.include? address1[1]
-      @paths << address2[1] unless paths.include? address2[1]
+    @file_data.each do |line|
+      host_adress = line.match(/Host=(([0-9]{1,3}\.)+[0-9]{1,3})/)
+      dest_adress = line.match(/Dest=(([0-9]{1,3}\.)+[0-9]{1,3})/)
+      @paths << host_adress[1] unless paths.include?(host_adress[1])
+      @paths << dest_adress[1] unless paths.include?(dest_adress[1])
     end
   end
 
   def ask_hostadress
     puts 'Choose the host adress: '
-    paths.each { |line| puts line }
+    @paths.each { |line| puts line }
     puts ''
     @host = $stdin.gets.chomp
-    until paths.include? host
+    until paths.include?(host)
       puts "Error: the chosen adress doesn't exist.\nChoose the host adress: "
       paths.each { |line| puts line }
       puts ''
       @host = $stdin.gets.chomp
       puts ''
     end
-    puts '=> ' + host + ' has been chosen like host adress.'
+    puts "=> #{@host} has been chosen like host adress."
   end
 
   def get_request_composition(requests)
     request = requests[0].split('@')
-    @request_object = request[0][/^.*\(/].tr('(', '')
+    @request_label = request[0][/^.*\(/].tr('(', '')
     request[0][/^.*\(/] = ''
     request[request.length - 1][/\)/] = ''
     key_value = {}
-    request.each do |string|
-      if string.split('=')[0] == 'Uri'
-        key_value['Uri'] = string.split('Uri=')[1]
+    request.each do |val|
+      if val.split('=')[0] == 'Uri'
+        key_value['Uri'] = val.split('Uri=')[1]
       else
-        key_value[string.split('=')[0]] = string.split('=')[1]
+        key_value[val.split('=')[0]] = val.split('=')[1]
       end
     end
     @request_host = key_value['Host']
@@ -132,7 +129,7 @@ class Generator
 
   def get_response_composition(responses)
     response = responses[0].split('@')
-    @response_object = response[0][/^.*\(/].tr('(', '')
+    @response_label = response[0][/^.*\(/].tr('(', '')
     response[0][/^.*\(/] = ''
     response[response.length - 1][/\)/] = ''
     key_value = {}
@@ -166,11 +163,11 @@ class Generator
 
   def save_rule
     rules_hash = []
-    rules.each do |rule|
-      rules_hash << rule.get_rule_hash
+    @rules.each do |rule|
+      rules_hash << rule.rule_to_hash
     end
-    File.open(file_name + '.' + file_type, 'w') do |file|
-      if file_type == 'json'
+    File.open("#{@file_name}.#{@file_type}", 'w') do |file|
+      if @file_type == 'json'
         file.puts JSON.pretty_generate(rules_hash)
       else
         file.write(rules_hash.to_yaml)
@@ -181,10 +178,10 @@ class Generator
   def create_rules
     requests = []
     responses = []
-    file_data.each do |line|
-      if line.include? 'Verb='
+    @file_data.each do |line|
+      if line.include?('Verb=')
         requests << line
-      elsif line.include? 'status='
+      elsif line.include?('status=')
         responses << line
       else
         puts 'Error when dispatching resquests/responses.'
@@ -195,10 +192,10 @@ class Generator
     while !requests.empty? && !responses.empty?
       get_request_composition(requests)
       get_response_composition(responses)
-      if request_dest == host && response_host == host
-        rule_type = 'inout'
+      if @request_dest == @host && @response_host == @host
+        @rule_type = 'inout'
       elsif request_host == host
-        rule_type = 'outin'
+        @rule_type = 'outin'
         @response_status = nil
         @response_headers = nil
         @response_body = nil
@@ -206,23 +203,23 @@ class Generator
         puts 'Error when creating rules(rule type unknown).'
         exit
       end
-      if rule_type == 'outin'
-        fullpath = 'http://' + request_dest + request_path
-        rule = Rule.new(rule_type, request_method, fullpath, request_headers, request_body, response_status, response_headers, response_body)
+      if @rule_type == 'outin'
+        fullpath = "http://#{@request_dest}#{request_path}"
+        rule = Rule.new(@rule_type, @request_method, fullpath, @request_headers, @request_body, @response_status, @response_headers, @response_body)
       else
-        rule = Rule.new(rule_type, request_method, request_path, request_headers, request_body, response_status, response_headers, response_body)
+        rule = Rule.new(@rule_type, @request_method, @request_path, @request_headers, @request_body, @response_status, @response_headers, @response_body)
       end
-      if !rules.empty?
+      if @rules.empty?
+        @rules << rule
+      else
         exist = false
-        rules.each do |existing_rule|
-          if existing_rule.equals? rule
+        @rules.each do |existing_rule|
+          if existing_rule.equals?(rule)
             exist = true
             break
           end
         end
         @rules << rule if exist == false
-      else
-        @rules << rule
       end
       requests.shift
       responses.shift
