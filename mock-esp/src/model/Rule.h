@@ -10,9 +10,10 @@ class Rule {
   Response response;
 
  public:
+  Rule() {}
   Rule(Request request, Response response);
-  Request getRequest();
-  Response getResponse();
+  virtual Request getRequest();
+  virtual Response getResponse();
 };
 
 #endif

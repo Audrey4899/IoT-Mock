@@ -5,6 +5,7 @@
 
 class InOutRule : public Rule {
  public:
+  InOutRule(){};
   InOutRule(Request request, Response response);
 };
 

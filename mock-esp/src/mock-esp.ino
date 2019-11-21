@@ -19,7 +19,8 @@ void loop() { webservice.update(); }
 
 
 void initWifi() {
-  WifiManager::startAP();
+  // WifiManager::startAP();
+  WifiManager::connect("Wi-Fi", "4815162342");
 }
 
 void saveCredential(String ssid, String password) {
