@@ -3,11 +3,14 @@
 
 // #include <Arduino.h>
 #include <ESP8266WebServer.h>
+#include <list>
+#include "model/InOutRule.h"
+#include "OutputHandler.h"
 
 class WebService {
  private:
   ESP8266WebServer server;
-
+  std::list<OutputHandler*> outputHandlers;
   void handleNotFound();
 
  public:

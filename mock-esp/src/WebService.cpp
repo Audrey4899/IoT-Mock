@@ -19,17 +19,15 @@ void WebService::start() {
       server.send(400, "text/plain", error);
       return;
     }
-    for (Rule *r : rules) {
-      // if(InOutRule *inout = dynamic_cast<InOutRule*>(r)) {
-      //   Serial.println("intout");
-      // } else if (OutInRule *outin = dynamic_cast<OutInRule*>(r)) {
-      //   Serial.println("outin");
-      // } else {
-      //   Serial.println("Not cool");
-      // }
-
-      Serial.println("Not cool");
-    }
+    // for (Rule *r : rules) {
+    //   if(InOutRule *inout = dynamic_cast<InOutRule*>(r)) {
+    //     Serial.println("intout");
+    //   } else if (OutInRule *outin = dynamic_cast<OutInRule*>(r)) {
+    //     Serial.println("outin");
+    //   } else {
+    //     Serial.println("Not cool");
+    //   }
+    // }
 
     server.send(204);
   });
@@ -42,9 +40,13 @@ void WebService::start() {
   Serial.println("Web service initialized.");
 }
 
-void WebService::update() { server.handleClient(); }
+void WebService::update() { 
+  server.handleClient();
+  for (OutputHandler *handler: this->outputHandlers) {
+    handler->update();
+  }
+}
 
 void WebService::handleNotFound() {
   server.send(200, "text/plain", "This is route *");
-  Serial.println(server.uri());
 }
