@@ -6,7 +6,7 @@
 
 class Loader {
  public:
-  virtual String load(String str, std::list<Rule*> &rules);
+  virtual String load(String str, std::list<Rule *> &rules) = 0;
 };
 
 #endif

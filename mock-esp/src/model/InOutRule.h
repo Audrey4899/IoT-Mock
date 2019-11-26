@@ -5,8 +5,8 @@
 
 class InOutRule : public Rule {
  public:
-  InOutRule(){};
   InOutRule(Request request, Response response);
+  String getClass() override { return "InOutRule"; };
 };
 
 #endif

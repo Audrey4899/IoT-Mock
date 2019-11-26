@@ -1,6 +1,7 @@
 #ifndef RULE_H
 #define RULE_H
 
+#include <Arduino.h>
 #include "Request.h"
 #include "Response.h"
 
@@ -11,9 +12,11 @@ class Rule {
 
  public:
   Rule() {}
+  virtual ~Rule() {}
   Rule(Request request, Response response);
-  virtual Request getRequest();
-  virtual Response getResponse();
+  Request getRequest();
+  Response getResponse();
+  virtual String getClass() = 0;
 };
 
 #endif

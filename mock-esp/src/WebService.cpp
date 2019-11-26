@@ -4,7 +4,7 @@
 
 void WebService::start() {
   server.on("/rules", HTTP_POST, [this]() {
-    JsonLoader *loader;
+    Loader *loader;
 
     String contentType = server.header("Content-Type");
     if (contentType.equals("application/json")) {
@@ -13,21 +13,22 @@ void WebService::start() {
       server.send(400);
       return;
     }
+
     std::list<Rule *> rules;
     String error = loader->load(server.arg("plain"), rules);
     if (!error.equals("OK")) {
       server.send(400, "text/plain", error);
       return;
     }
-    // for (Rule *r : rules) {
-    //   if(InOutRule *inout = dynamic_cast<InOutRule*>(r)) {
-    //     Serial.println("intout");
-    //   } else if (OutInRule *outin = dynamic_cast<OutInRule*>(r)) {
-    //     Serial.println("outin");
-    //   } else {
-    //     Serial.println("Not cool");
-    //   }
-    // }
+    for (Rule *r : rules) {
+      if (r->getClass().equals("InOutRule")) {
+        InOutRule *inout = (InOutRule *)r;
+        Serial.println(inout->getRequest().getPath());
+      } else if (r->getClass().equals("OutInRule")) {
+        OutInRule *outin = (OutInRule *)r;
+        Serial.println(outin->getRequest().getPath());
+      }
+    }
 
     server.send(204);
   });
@@ -40,9 +41,9 @@ void WebService::start() {
   Serial.println("Web service initialized.");
 }
 
-void WebService::update() { 
+void WebService::update() {
   server.handleClient();
-  for (OutputHandler *handler: this->outputHandlers) {
+  for (OutputHandler *handler : this->outputHandlers) {
     handler->update();
   }
 }

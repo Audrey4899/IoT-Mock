@@ -16,6 +16,7 @@ class OutInRule : public Rule {
   long getTimeout();
   int getRepeat();
   long getInterval();
+  String getClass() override { return "OutInRule"; };
 };
 
 #endif
