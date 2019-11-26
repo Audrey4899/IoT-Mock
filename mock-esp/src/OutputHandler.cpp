@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include "OutputHandler.h"
 
-OutputHandler::OutputHandler(OutInRule rule) {
-  this->rule = rule;
+OutputHandler::OutputHandler(OutInRule &rule) {
+  this->rule = &rule;
   this->count = 0;
   this->startTime = 0;
   this->lastTime = 0;
@@ -12,11 +12,11 @@ OutputHandler::OutputHandler(OutInRule rule) {
 void OutputHandler::update() {
   if (isDone()) return;
   if (this->startTime == 0) this->startTime = millis();
-  if (!this->hasStarted && this->rule.getTimeout() < (long)(millis() - this->startTime)) {
+  if (!this->hasStarted && this->rule->getTimeout() < (long)(millis() - this->startTime)) {
     sendRequest();
     this->hasStarted = true;
   }
-  if (hasStarted && this->rule.getInterval() < (long)(millis() - this->lastTime)) {
+  if (hasStarted && this->rule->getInterval() < (long)(millis() - this->lastTime)) {
     sendRequest();
   }
 }
@@ -32,5 +32,5 @@ void OutputHandler::sendRequest() {
 }
 
 bool OutputHandler::isDone() {
-  return (count >= rule.getRepeat() && rule.getRepeat() != 0);
+  return (count >= rule->getRepeat() && rule->getRepeat() != 0);
 }

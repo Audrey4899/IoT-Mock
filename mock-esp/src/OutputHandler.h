@@ -5,7 +5,7 @@
 
 class OutputHandler {
  private:
-  OutInRule rule;
+  OutInRule *rule;
   int count;
   unsigned long startTime;
   unsigned long lastTime;
@@ -15,7 +15,7 @@ class OutputHandler {
 
   void sendRequest();
  public:
-  OutputHandler(OutInRule rule);
+  OutputHandler(OutInRule &rule);
   void update();
   bool isDone();
 };

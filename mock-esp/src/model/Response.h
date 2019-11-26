@@ -11,7 +11,6 @@ class Response {
   String body;
 
  public:
-  Response() {};
   Response(int status, std::map<String, String> headers, String body);
   int getStatus();
   std::map<String, String> getHeaders();

@@ -5,7 +5,7 @@
 
 class InOutRule : public Rule {
  public:
-  InOutRule(Request request, Response response);
+  InOutRule(Request &request, Response &response);
   String getClass() override { return "InOutRule"; };
 };
 

@@ -1,6 +1,6 @@
 #include "OutInRule.h"
 
-OutInRule::OutInRule(Request request, Response response, long timeout, int repeat, long interval) : Rule(request, response) {
+OutInRule::OutInRule(Request &request, Response &response, long timeout, int repeat, long interval) : Rule(request, response) {
   this->timeout = timeout;
   this->repeat = repeat;
   this->interval = interval;

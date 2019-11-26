@@ -7,13 +7,12 @@
 
 class Rule {
  private:
-  Request request;
-  Response response;
+  Request *request;
+  Response *response;
 
  public:
-  Rule() {}
   virtual ~Rule() {}
-  Rule(Request request, Response response);
+  Rule(Request &request, Response &response);
   Request getRequest();
   Response getResponse();
   virtual String getClass() = 0;

@@ -10,8 +10,7 @@ class OutInRule : public Rule {
   long interval;
 
  public:
-  OutInRule() {}
-  OutInRule(Request request, Response response, long timeout, int repeat,
+  OutInRule(Request &request, Response &response, long timeout, int repeat,
             long interval);
   long getTimeout();
   int getRepeat();

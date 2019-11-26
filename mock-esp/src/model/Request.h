@@ -13,7 +13,6 @@ class Request {
   String body;
 
  public:
-  Request() {};
   Request(String method, String path, std::map<String, String> headers, String body);
   String getMethod();
   String getPath();

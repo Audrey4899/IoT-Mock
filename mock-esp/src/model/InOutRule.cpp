@@ -1,4 +1,4 @@
 #include "InOutRule.h"
 
-InOutRule::InOutRule(Request request, Response response)
+InOutRule::InOutRule(Request &request, Response &response)
     : Rule(request, response) {}

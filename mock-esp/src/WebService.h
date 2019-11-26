@@ -12,6 +12,7 @@ class WebService {
   ESP8266WebServer server;
   std::list<OutputHandler*> outputHandlers;
   void handleNotFound();
+  void handleRulesPOST();
 
  public:
   void update();
