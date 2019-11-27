@@ -17,6 +17,10 @@ void WebService::update() {
   server.handleClient();
   for (OutputHandler *handler : this->outputHandlers) {
     handler->update();
+    // if(handler->isDone()) {
+    //   outputHandlers.remove(handler);
+    //   delete handler;
+    // }
   }
 }
 
@@ -33,6 +37,7 @@ void WebService::handleRulesPOST() {
 
   std::list<Rule *> rules;
   String error = loader->load(server.arg("plain"), rules);
+  delete loader;
   if (!error.equals("OK")) {
     server.send(400, "text/plain", error);
     return;
@@ -44,6 +49,7 @@ void WebService::handleRulesPOST() {
     } else if (r->getClass().equals("OutInRule")) {
       OutInRule *outin = (OutInRule *)r;
       Serial.println(outin->getRequest().getPath());
+      outputHandlers.push_back(new OutputHandler(*outin));
     }
   }
 

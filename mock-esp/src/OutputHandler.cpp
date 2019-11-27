@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ESP8266HTTPClient.h>
 #include "OutputHandler.h"
 
 OutputHandler::OutputHandler(OutInRule &rule) {
@@ -25,7 +26,15 @@ void OutputHandler::sendRequest() {
   this->count++;
   this->lastTime = millis();
 
-  Serial.println("Sending...");
+  WiFiClient client;
+  HTTPClient http;
+  http.begin(client, rule->getRequest().getPath());
+  int test = http.sendRequest((char*)(rule->getRequest().getMethod().c_str()), rule->getRequest().getBody());
+  
+  if(test < 0) Serial.println(http.errorToString(test));
+  else Serial.println(test);
+
+  http.end();
   // unsigned long tmp = millis();
   // Serial.println(tmp - test);
   // test = tmp;
