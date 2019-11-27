@@ -1,8 +1,10 @@
 #include "WebService.h"
 
 #include "load/JsonLoader.h"
+#include "ConfigManager.h" 
 
 void WebService::start() {
+  server.on("/config", HTTP_POST, [this]() { handleConfigPOST(); });
   server.on("/rules", HTTP_POST, [this]() { handleRulesPOST(); });
   server.onNotFound([this]() { handleNotFound(); });
 
@@ -58,4 +60,14 @@ void WebService::handleRulesPOST() {
 
 void WebService::handleNotFound() {
   server.send(200, "text/plain", "This is route *");
+}
+
+void WebService::handleConfigPOST() {
+  String ssid = server.arg("ssid");
+  String password = server.arg("password");
+  ConfigManager::saveConfig(ssid, password);
+  server.send(204);
+  delay(500);
+  void(* reset) (void) = 0;
+  reset();
 }

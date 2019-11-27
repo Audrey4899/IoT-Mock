@@ -6,7 +6,7 @@
 class WifiManager {
  public:
   static void startAP();
-  static void connect(String ssid, String password);
+  static bool connect(String ssid, String password);
 };
 
 #endif

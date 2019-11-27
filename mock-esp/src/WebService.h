@@ -13,6 +13,7 @@ class WebService {
   std::list<OutputHandler*> outputHandlers;
   void handleNotFound();
   void handleRulesPOST();
+  void handleConfigPOST();
 
  public:
   void update();
