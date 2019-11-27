@@ -30,7 +30,7 @@ public class OutputRequest extends Thread {
                 HttpRequest.Builder builder = HttpRequest.newBuilder()
                         .method(outInRule.getRequest().getMethod(), HttpRequest.BodyPublishers.ofString(outInRule.getRequest().getBody()))
                         .uri(new URI(outInRule.getRequest().getPath()));
-
+                outInRule.getRequest().getHeaders().forEach(builder::header);
                 requestAsync(builder.build());
             } catch (URISyntaxException e) {
                 e.printStackTrace();

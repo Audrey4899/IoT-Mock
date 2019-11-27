@@ -41,20 +41,27 @@ public class WebService extends HttpServlet {
 
     private Handler attackHandler() {
         return ctx -> {
-            if (getRules().size() != 0) {
+            if(getRules().size() != 0) {
                 Attacker attacker = new Attacker(getRules());
                 ctx.status(204);
-                if (Objects.equals(ctx.queryParam("type"), "all")) {
-                    attacker.XSSAttack();
+                if(Objects.equals(ctx.queryParam("type"), "all")) {
+                    attacker.XSSAttacks();
                     attacker.httpFloodAttack();
                     attacker.robustnessAttacks();
-                } else if (Objects.equals(ctx.queryParam("type"), "httpfloud")) {
+                    attacker.requestSplittingAttack();
+                } else if(Objects.equals(ctx.queryParam("type"), "httpflood")) {
                     attacker.httpFloodAttack();
-                } else if (Objects.equals(ctx.queryParam("type"), "xss")) {
-                    attacker.XSSAttack();
-                } else if (Objects.equals(ctx.queryParam("type"),"robustness")) {
+                } else if(Objects.equals(ctx.queryParam("type"), "xss")) {
+                    attacker.XSSAttacks();
+                } else if(Objects.equals(ctx.queryParam("type"),"robustness")) {
                     attacker.robustnessAttacks();
+                } else if(Objects.equals(ctx.queryParam("type"),"reqsplitting")) {
+                    attacker.requestSplittingAttack();
+                } else {
+                    ctx.result("Error: wrong/no attack type given.");
+                    ctx.status(400);
                 }
+                attacker.attack();
             } else {
                 ctx.result("Error: no rules found.");
                 ctx.status(400);
@@ -108,7 +115,7 @@ public class WebService extends HttpServlet {
         }
     }
 
-    public List<Rule> getRules() {
+    private List<Rule> getRules() {
         return rules;
     }
 
