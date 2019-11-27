@@ -16,13 +16,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @WebServlet(urlPatterns = {"/*"})
 public class WebService extends HttpServlet {
+    private List<Rule> rules = new ArrayList<>();
     private Javalin app;
     private Map<String, InOutHandler> handlers = new HashMap<>();
 
@@ -38,6 +36,30 @@ public class WebService extends HttpServlet {
 
         app.get("/", ctx -> ctx.result("It works !"));
         app.post("/rules", addRulesHandler());
+        app.post("/attack",attackHandler());
+    }
+
+    private Handler attackHandler() {
+        return ctx -> {
+            if (getRules().size() != 0) {
+                Attacker attacker = new Attacker(getRules());
+                ctx.status(204);
+                if (Objects.equals(ctx.queryParam("type"), "all")) {
+                    attacker.XSSAttack();
+                    attacker.httpFloodAttack();
+                    attacker.robustnessAttacks();
+                } else if (Objects.equals(ctx.queryParam("type"), "httpfloud")) {
+                    attacker.httpFloodAttack();
+                } else if (Objects.equals(ctx.queryParam("type"), "xss")) {
+                    attacker.XSSAttack();
+                } else if (Objects.equals(ctx.queryParam("type"),"robustness")) {
+                    attacker.robustnessAttacks();
+                }
+            } else {
+                ctx.result("Error: no rules found.");
+                ctx.status(400);
+            }
+        };
     }
 
     private Handler addRulesHandler() {
@@ -63,6 +85,7 @@ public class WebService extends HttpServlet {
             if (rule instanceof InOutRule) {
                 addHandler((InOutRule) rule);
             } else if (rule instanceof OutInRule) {
+                this.rules.add(rule);
                 new OutputRequest((OutInRule) rule).start();
             }
         }
@@ -83,6 +106,10 @@ public class WebService extends HttpServlet {
             }
             handlers.put(id, handler);
         }
+    }
+
+    public List<Rule> getRules() {
+        return rules;
     }
 
     @Override

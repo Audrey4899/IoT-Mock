@@ -5,20 +5,45 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Attacker {
     private List<Rule> rules;
+    private List<Rule> attackRules;
 
     public Attacker(List<Rule> rules) {
-        this.rules = rules;
+        this.attackRules = new ArrayList<>();
+        this.rules = new ArrayList<>();
+        this.rules.addAll(rules);
     }
 
+    public void XSSAttack() {
+        Pattern pattern = Pattern.compile("(.*\\?)([^=]*=.*)");
+        Matcher matcher;
+        String[] params;
+        Map<String,String> paramMap = new LinkedHashMap<>();
+        for(Rule rule: rules) {
+            matcher = pattern.matcher(rule.getRequest().getPath());
+            if(matcher.find()) {
+                params = matcher.group(2).split("&");
+            } else return;
+            for(String param: params) {
+                paramMap.put(param.split("=")[0],"");
+            }
+            String script = "<script>alert(\"XSS\")</script>";
+            Set<Map.Entry<String, String>> paramSet = paramMap.entrySet();
+            Iterator<Map.Entry<String, String>> it = paramSet.iterator();
+            String path = matcher.group(1);
+            while(it.hasNext()) {
+                Map.Entry<String, String> e = it.next();
+                path = path.concat(e.getKey() + "=" + script + "&");
+            }
+            path = path.substring(0,path.length()-1);
+            attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(),path,rule.getRequest().getHeaders(),rule.getRequest().getBody()), null, 0L, 1, 0L));
+        }
+    }
 
     private void generateBigFile() throws IOException {
         int maxSize = Integer.MAX_VALUE;
@@ -77,6 +102,11 @@ public class Attacker {
     }
 
     //----- ROBUSTNESS ATTACKS -----
+    public void robustnessAttacks() {
+        verbNotExist();
+        emptyVerb();
+        specialChar();
+    }
 
     public void verbNotExist() {
         for (String ipAddress : getIpAddresses()) {
