@@ -10,6 +10,7 @@
 class WebService {
  private:
   ESP8266WebServer server;
+  std::list<InOutRule*> inOutRules;
   std::list<OutputHandler*> outputHandlers;
   void handleNotFound();
   void handleRulesPOST();

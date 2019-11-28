@@ -29,9 +29,13 @@ void OutputHandler::sendRequest() {
   WiFiClient client;
   HTTPClient http;
   http.begin(client, rule->getRequest().getPath());
-  int test = http.sendRequest((char*)(rule->getRequest().getMethod().c_str()), rule->getRequest().getBody());
-  
-  if(test < 0) Serial.println(http.errorToString(test));
+
+  for (auto &&h : rule->getRequest().getHeaders()) {
+    http.addHeader(h.first, h.second);
+  }
+  int test = http.sendRequest((char *)(rule->getRequest().getMethod().c_str()), rule->getRequest().getBody());
+
+  if (test < 0) Serial.println(http.errorToString(test));
   else Serial.println(test);
 
   http.end();

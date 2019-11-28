@@ -1,7 +1,7 @@
 #include "WebService.h"
 
 #include "load/JsonLoader.h"
-#include "ConfigManager.h" 
+#include "ConfigManager.h"
 
 void WebService::start() {
   server.on("/config", HTTP_POST, [this]() { handleConfigPOST(); });
@@ -48,9 +48,9 @@ void WebService::handleRulesPOST() {
     if (r->getClass().equals("InOutRule")) {
       InOutRule *inout = (InOutRule *)r;
       Serial.println(inout->getRequest().getPath());
+      inOutRules.push_back(inout);
     } else if (r->getClass().equals("OutInRule")) {
       OutInRule *outin = (OutInRule *)r;
-      Serial.println(outin->getRequest().getPath());
       outputHandlers.push_back(new OutputHandler(*outin));
     }
   }
@@ -59,7 +59,37 @@ void WebService::handleRulesPOST() {
 }
 
 void WebService::handleNotFound() {
-  server.send(200, "text/plain", "This is route *");
+  String rawURI = server.uri();
+  String query = "";
+  for (size_t i = 0; i < server.args(); i++) {
+    if (server.argName(i).equals("plain")) continue;
+    query += "&" + server.argName(i) + "=" + server.arg(i);
+  }
+  if (query.length() != 0) {
+    query[0] = *"?";
+  }
+  rawURI += query;
+
+  InOutRule *r = nullptr;
+  for (InOutRule *rule : inOutRules) {
+    String simpleURI = rule->getRequest().getPath().substring(0, rule->getRequest().getPath().indexOf("?"));
+    if (!rawURI.equals(rule->getRequest().getPath())) continue;
+    // TODO: Check method, headers and body
+    r = rule;
+    break;
+  }
+
+  if (r != nullptr) {
+    String contentType;
+    for (auto &&header : r->getResponse().getHeaders()) {
+      if (header.first == "Content-Type") contentType = header.first;
+      else server.sendHeader(header.first, header.second);
+    }
+    contentType = (contentType == "") ? "text/plain" : contentType;
+    server.send(r->getResponse().getStatus(), contentType, r->getResponse().getBody());
+  } else {
+    server.send(404, "text/plain", "No rule defined for this request.");
+  }
 }
 
 void WebService::handleConfigPOST() {
@@ -68,6 +98,6 @@ void WebService::handleConfigPOST() {
   ConfigManager::saveConfig(ssid, password);
   server.send(204);
   delay(500);
-  void(* reset) (void) = 0;
+  void (*reset)(void) = 0;
   reset();
 }

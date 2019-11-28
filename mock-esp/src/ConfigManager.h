@@ -7,7 +7,6 @@
 class ConfigManager {
  public:
   static void saveConfig(String ssid, String password) {
-    String ok = "OK";
     EEPROM.begin(512);
     for (int i = 0; i < 512; ++i) {
       EEPROM.write(i, 255);

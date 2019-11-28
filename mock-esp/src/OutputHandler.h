@@ -15,7 +15,7 @@ class OutputHandler {
 
   void sendRequest();
  public:
-  OutputHandler(OutInRule &rule);
+  explicit OutputHandler(OutInRule &rule);
   void update();
   bool isDone();
 };

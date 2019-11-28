@@ -26,12 +26,12 @@ bool WifiManager::connect(String ssid, String password) {
 
   WiFi.begin(ssid, password);
   Serial.print("Connecting to " + ssid + " with password " + password);
-  int time = 0;
+  int elapsedTime = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    if(time>20000) return false;
-    time += 500;
+    if(elapsedTime>20000) return false;
+    elapsedTime += 500;
   }
   Serial.println();
   Serial.println("Connected with IP: " + WiFi.localIP().toString());
