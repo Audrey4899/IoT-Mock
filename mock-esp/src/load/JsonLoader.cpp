@@ -57,21 +57,32 @@ String JsonLoader::loadRequest(JsonObject &rule, Request *&request) {
   JsonObject req = rule["request"];
   String method = req["method"].as<String>();
   String path = req["path"].as<String>();
-  // TODO: load headers
+  std::map<String, String> *headers;
+  loadHeaders(req, headers);
   String body = req["body"].as<String>();
   // TODO: check OK
 
-  request = new Request(method, path, std::map<String, String>(), body);
+  request = new Request(method, path, *headers, body);
   return "OK";
 }
 
 String JsonLoader::loadResponse(JsonObject &rule, Response *&response) {
   JsonObject res = rule["response"];
   int status = res["status"].as<int>();
-  // TODO: load headers
+  std::map<String, String> *headers;
+  loadHeaders(res, headers);
   String body = res["body"].as<String>();
-  // TODO: create Response & check OK
+  // TODO: check OK
 
-  response = new Response(status, std::map<String, String>(), body);
+  response = new Response(status, *headers, body);
+  return "OK";
+}
+
+String JsonLoader::loadHeaders(JsonObject &obj, std::map<String, String> *&headers) {
+  JsonObject heads = obj["headers"];
+  headers = new std::map<String, String>();
+  for (JsonPair header : heads) {
+    headers->insert({header.key().c_str(), header.value().as<String>()});
+  }
   return "OK";
 }

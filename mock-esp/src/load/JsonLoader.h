@@ -16,6 +16,7 @@ class JsonLoader : public Loader {
   String loadOutInRule(JsonObject &rule, OutInRule *&outInRule);
   String loadRequest(JsonObject &rule, Request *&request);
   String loadResponse(JsonObject &rule, Response *&response);
+  String loadHeaders(JsonObject &obj, std::map<String, String> *&headers);
 
  public:
   String load(String str, std::list<Rule *> &rules) override;
