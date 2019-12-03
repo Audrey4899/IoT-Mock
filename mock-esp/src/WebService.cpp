@@ -23,6 +23,7 @@ void WebService::update() {
     //   outputHandlers.remove(handler);
     //   delete handler;
     // }
+    // TODO: Maybe do this
   }
 }
 
@@ -33,7 +34,7 @@ void WebService::handleRulesPOST() {
   if (contentType.equals("application/json")) {
     loader = new JsonLoader();
   } else {
-    server.send(400);
+    server.send(400, "text/plain", "Content-Type must be application/json.");
     return;
   }
 
@@ -44,16 +45,33 @@ void WebService::handleRulesPOST() {
     server.send(400, "text/plain", error);
     return;
   }
+  std::list<String> headersKeys;
   for (Rule *r : rules) {
     if (r->getClass().equals("InOutRule")) {
       InOutRule *inout = (InOutRule *)r;
       Serial.println(inout->getRequest().getPath());
+      for (auto &&h : inout->getRequest().getHeaders()) {
+        headersKeys.push_back(h.first);
+      }
+
       inOutRules.push_back(inout);
     } else if (r->getClass().equals("OutInRule")) {
       OutInRule *outin = (OutInRule *)r;
       outputHandlers.push_back(new OutputHandler(*outin));
     }
   }
+
+  headersKeys.unique();
+  collectedHeaders.merge(headersKeys);
+  collectedHeaders.unique();
+  char *keys[collectedHeaders.size()];
+  int i = 0;
+  for (String k : collectedHeaders) {
+    char *key = new char[k.length() + 1];
+    strcpy(key, k.c_str());
+    keys[i++] = key;
+  }
+  server.collectHeaders((const char **)keys, collectedHeaders.size());
 
   server.send(204);
 }
@@ -70,15 +88,24 @@ void WebService::handleNotFound() {
   }
   rawURI += query;
 
+  String methods[] = {"ANY", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"};
+
   InOutRule *r = nullptr;
   for (InOutRule *rule : inOutRules) {
     String simpleURI = rule->getRequest().getPath().substring(0, rule->getRequest().getPath().indexOf("?"));
+    if (!methods[server.method()].equals(rule->getRequest().getMethod())) continue;
     if (!rawURI.equals(rule->getRequest().getPath())) continue;
-    // TODO: Check method, headers and body
+    if (!server.arg("plain").equals(rule->getRequest().getBody())) continue;
+
+    bool areHeadersGood = true;
+    for (auto &&h : rule->getRequest().getHeaders()) {
+      if (server.header(h.first) != h.second) areHeadersGood = false;
+    }
+    if (!areHeadersGood) continue;
+
     r = rule;
     break;
   }
-
   if (r != nullptr) {
     String contentType;
     for (auto &&header : r->getResponse().getHeaders()) {

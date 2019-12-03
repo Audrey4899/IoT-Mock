@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266WiFiMulti.h>
 #include "OutputHandler.h"
 
 OutputHandler::OutputHandler(OutInRule &rule) {
@@ -16,6 +17,7 @@ void OutputHandler::update() {
   if (!this->hasStarted && this->rule->getTimeout() < (long)(millis() - this->startTime)) {
     sendRequest();
     this->hasStarted = true;
+    return;
   }
   if (hasStarted && this->rule->getInterval() < (long)(millis() - this->lastTime)) {
     sendRequest();
