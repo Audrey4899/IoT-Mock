@@ -2,13 +2,8 @@ import model.InOutRule;
 import model.OutInRule;
 import model.Request;
 import model.Rule;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpRequest;
+
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -103,96 +98,123 @@ public class Attacker {
         }
     }
 
+
+    /**
+     * Generate a random String of 5 000 000 alpha-numeric characters
+     * Write this String in a text file and save it
+     */
     private void generateBigFile() throws IOException {
-        int maxSize = Integer.MAX_VALUE;
+        int maxSize = 5000000;
         String allowedCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder sbRandomString = new StringBuilder(maxSize);
-        Random random = new Random();
         for (int i = 0; i < maxSize; i++) {
-            int randomInt = random.nextInt(allowedCharacters.length());
-            sbRandomString.append(allowedCharacters.charAt(randomInt));
+            int index = ((int) (allowedCharacters.length() * Math.random()));
+            sbRandomString.append(allowedCharacters.charAt(index));
         }
         String randomString = sbRandomString.toString();
-        FileOutputStream FosBigFile = new FileOutputStream("bigFileHttpFlood.txt");
-        FosBigFile.write(randomString.getBytes());
-        FosBigFile.close();
+        BufferedWriter bwBigFile = new BufferedWriter(new FileWriter("bigFileHttpFlood.txt"));
+        bwBigFile.write(randomString);
+        bwBigFile.close();
     }
 
-    private String readFile(File fileName) throws IOException {
-        FileInputStream Fis = new FileInputStream(fileName);
+    /**
+     * Read and add each line of the file in a StringBuilder variable
+     * @return The random String extracted from the text file
+     */
+    private String readFile() throws IOException {
+        BufferedReader brBigFile = new BufferedReader(new FileReader("bigFileHttpFlood.txt"));
         StringBuilder sbContent = new StringBuilder();
-        int chr;
-        while ((chr = Fis.read()) != -1) {
-            sbContent.append((char) chr);
+        String line;
+        while ((line = brBigFile.readLine()) != null) {
+            sbContent.append(line);
         }
-        Fis.close();
+        brBigFile.close();
         return sbContent.toString();
     }
 
-    private List<String> getIpAddresses() {
-        List<String> ipAddresses = new ArrayList<>();
+    /**
+     * For each OutInRule, get path and extract the ip or the domain name
+     * @return The list of the paths contained in OutIn rules
+     */
+    public List<String> getPaths() {
+        List<String> paths = new ArrayList<>();
         for (Rule rule : rules) {
             if (rule instanceof InOutRule) {
                 continue;
             }
-            Pattern pattern = Pattern.compile("(([0-9]{1,3}.){3}[0-9]{1,3})");
+            Pattern pattern = Pattern.compile("(https?:\\/\\/([^/]*))");
             Matcher matcher = pattern.matcher(rule.getRequest().getPath());
-            ipAddresses.add(matcher.group(1));
+            if (matcher.find()) {
+                paths.add(matcher.group(1));
+            }
         }
-        return ipAddresses;
+        return paths;
     }
 
+    /**
+     * Generate the file if not exists and read this
+     * For each connected object, add an OutInRule with the random String generated in the request body
+     * This rule is sent 2000 times simultaneous to the specified path
+     */
     public void httpFloodAttack() throws IOException {
-        File bigFile = new File("bigFileHttpFlood.txt");
-        String content;
-        if (bigFile.exists()){
-            content = readFile(bigFile);
-        } else {
-            generateBigFile();
-            content = readFile(bigFile);
-        }
-        for (String ipAddress : getIpAddresses()) {
-            attackRules.add(new OutInRule(new Request("POST", ipAddress, null, content), null, 0L, 2000, 0L));
+        generateBigFile();
+        String content = readFile();
+        for (String path : getPaths()) {
+            attackRules.add(new OutInRule(new Request("POST", path, null, content),
+                    null, 0L, 2000, 0L));
         }
     }
 
-    public void requestSplittingAttack() throws URISyntaxException {
+    /*public void requestSplittingAttack() {
         Map<String, String> headers = new HashMap<>();
-        headers.put("Transfert-Encoding", "chunked\r\n\r\n0\r\n\r\n");
-        for (String ipAddress : getIpAddresses()) {
-            Request reqToInject = new Request("POST", ipAddress, null, "HTTP Request Splitting Attack");
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .method(reqToInject.getMethod(), HttpRequest.BodyPublishers.ofString(reqToInject.getBody()))
-                    .uri(new URI(reqToInject.getPath()));
-            String encodedReq = builder.build().toString();
-            attackRules.add(new OutInRule(new Request("POST", ipAddress, headers, encodedReq), null, 0L, 1, null));
+        headers.put("Transfert-Encoding", "chunked");
+        for (String path : getPaths()) {
+            //Request reqToInject = new Request("POST", path, null, "HTTP Request Splitting Attack");
+            OutInRule reqSplittingRule = new OutInRule(new Request("POST", path, headers, "\r\n\r\n0\r\n\r\n"+"POST+%2F+HTTP%2F1.1%0D%0AHost%3A+"+path),
+                    null, 0L, 1, null);
+            attackRules.add(reqSplittingRule);
         }
-    }
+    }*/
 
-    //----- ROBUSTNESS ATTACKS -----
+
+    /**
+     * Method which call all or selected robustness attacks
+     */
     public void robustnessAttacks() {
         verbNotExist();
-        emptyVerb();
         specialChar();
+        emptyVerb();
     }
 
+    /**
+     * For each existing OutInRule, replace original method with a wrong method and add it in attackRules list
+     */
     private void verbNotExist() {
-        for (String ipAddress : getIpAddresses()) {
-            attackRules.add(new OutInRule(new Request("wrongVerb", ipAddress, null, null), null, 0L, 1, null));
+        for (Rule rule : rules) {
+            attackRules.add(new OutInRule(new Request("wrongVerb", rule.getRequest().getPath(), rule.getRequest().getHeaders(),
+                    rule.getRequest().getBody()), null, 0L, 1, null));
         }
     }
 
+    /**
+     * For each existing OutInRule, replace original method with an empty parameter
+     */
     private void emptyVerb() {
-        for (String ipAddress : getIpAddresses()) {
-            attackRules.add(new OutInRule(new Request("", ipAddress, null, null), null, 0L, 1, null));
+        for (Rule rule : rules) {
+            attackRules.add(new OutInRule(new Request("", rule.getRequest().getPath(), rule.getRequest().getHeaders(),
+                    rule.getRequest().getBody()), null, 0L, 1, null));
         }
     }
 
+    /**
+     * For each existing OutInRule, add two special characters to original method
+     */
     private void specialChar() {
-        Map<String, String> headers = new HashMap<>();
-        headers.put("~`^@=+*", "$€£¤ø");
-        for (String ipAddress : getIpAddresses()) {
-            attackRules.add(new OutInRule(new Request("&'ƒ#%Šµ", ipAddress, headers, null), null, 0L, 1, null));
+        for (Rule rule : rules) {
+            String method = rule.getRequest().getMethod();
+            method = new StringBuffer(method).insert(1, "@").insert(3, "€").toString();
+            attackRules.add(new OutInRule(new Request(method, rule.getRequest().getPath(), rule.getRequest().getHeaders(),
+                    rule.getRequest().getBody()), null, 0L, 1, null));
         }
     }
 }

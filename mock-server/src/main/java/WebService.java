@@ -48,17 +48,18 @@ public class WebService extends HttpServlet {
                     attacker.XSSAttacks();
                     attacker.httpFloodAttack();
                     attacker.robustnessAttacks();
-                    attacker.requestSplittingAttack();
-                } else if(Objects.equals(ctx.queryParam("type"), "httpflood")) {
+                    //attacker.requestSplittingAttack();
+                } else if (Objects.equals(ctx.queryParam("type"), "httpflood")) {
                     attacker.httpFloodAttack();
                 } else if(Objects.equals(ctx.queryParam("type"), "xss")) {
                     attacker.XSSAttacks();
                 } else if(Objects.equals(ctx.queryParam("type"),"robustness")) {
                     attacker.robustnessAttacks();
-                } else if(Objects.equals(ctx.queryParam("type"),"reqsplitting")) {
+                }/* else if (Objects.equals(ctx.queryParam("type"), "reqsplitting")) {
                     attacker.requestSplittingAttack();
-                } else {
-                    ctx.result("Error: wrong/no attack type given.");
+                }*/
+                else {
+                    ctx.result("Error: wrong/no attack type given;");
                     ctx.status(400);
                 }
                 attacker.attack();
