@@ -8,11 +8,19 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * An attacker is created when the user request the web service with the "/attack" query parameter.
+ * It has 3 lists: XSS scripts, mock rules and attack rules (which are created from the existing rules).
+ */
 public class Attacker {
     private List<String> scripts;
     private List<Rule> rules;
     private List<Rule> attackRules;
 
+    /**
+     * The constructor instantiates the different lists and add the rules and XSS scripts.
+     * @param rules: mock rules given by the user.
+     */
     public Attacker(List<Rule> rules) {
         this.attackRules = new ArrayList<>();
         this.rules = new ArrayList<>();
@@ -24,12 +32,21 @@ public class Attacker {
         scripts.add("<svg onload=alert('XSS')>");
     }
 
+    /**
+     * This method is called at the end of the attack handler.
+     * It create and start an output request for each attack rule created before.
+     */
     public void attack() {
         for(Rule rule: attackRules) {
             new OutputRequest((OutInRule) rule).start();
         }
     }
 
+    /**
+     * This method call the 3 different XSS methods.
+     * The first one use a different script because the script has to be encoded to be sent
+     * in the http request query parameters.
+     */
     public void XSSAttacks() {
         XSSQueryParams();
         for(String script: scripts) {
@@ -38,6 +55,10 @@ public class Attacker {
         }
     }
 
+    /**
+     * This method extract all the query parameters from the http request URI and change each
+     * parameter value to the XSS script.
+     */
     private void XSSQueryParams() {
         Pattern pattern = Pattern.compile("(.*\\?)([^=]*=.*)");
         Matcher matcher;
@@ -70,6 +91,11 @@ public class Attacker {
         }
     }
 
+    /**
+     * This method extract all the headers from the http request and change each
+     * value to the XSS script.
+     * @param script: the XSS script which is gonna be injected.
+     */
     private void XSSHeaders(String script) {
         Map<String, String> headersMap = new HashMap<>();
         for(Rule rule: rules) {
@@ -85,6 +111,10 @@ public class Attacker {
         }
     }
 
+    /**
+     * This method extract the body from the http request and change its value to the XSS script.
+     * @param script: the XSS script which is gonna be injected.
+     */
     private void XSSBody(String script) {
         for(Rule rule: rules) {
             if(rule instanceof InOutRule) {
