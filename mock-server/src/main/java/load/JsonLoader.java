@@ -106,19 +106,19 @@ public class JsonLoader implements Loader {
     /**
      * Load a Headers
      *
-     * @param o The JSONObject to get it headers
+     * @param headers The JSONObject to get it headers
      * @return The loaded Headers
      */
-    private Map<String, String> loadHeaders(JSONObject o) throws LoaderException {
-        JSONObject headersObj = getCheckAndCast(o, "headers", JSONObject.class);
-        Map<String, String> headers = new HashMap<>();
+    private Map<String, String> loadHeaders(JSONObject headers) throws LoaderException {
+        JSONObject headersObj = getCheckAndCast(headers, "headers", JSONObject.class);
+        Map<String, String> headersList = new HashMap<>();
         if (headersObj != null) {
             if (headersObj.keys().hasNext()) {
                 String keyName = headersObj.keys().next();
                 String content = getCheckAndCast(headersObj, keyName, String.class);
                 headers.put(keyName, content);
             }
-            return headers;
+            return headersList;
         } else
             return null;
     }
