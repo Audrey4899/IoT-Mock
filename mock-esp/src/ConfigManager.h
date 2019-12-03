@@ -2,37 +2,23 @@
 #define CONFIGMANGER_H
 
 #include <Arduino.h>
-#include <EEPROM.h>
+#include <FS.h>
 
 class ConfigManager {
  public:
-  static void saveConfig(String ssid, String password) {
-    EEPROM.begin(512);
-    for (int i = 0; i < 512; ++i) {
-      EEPROM.write(i, 255);
-    }
-    EEPROM.put(0, ssid);
-    EEPROM.put(0 + sizeof(ssid), password);
-    EEPROM.put(0 + sizeof(ssid) + sizeof(password), "OK");
-    // EEPROM.commit();
-    EEPROM.end();
+  static void save(String ssid, String password) {
+    SPIFFS.begin();
+    File f = SPIFFS.open("WIFIConfig", "w");
+    f.printf("%s;%s;", ssid.c_str(), password.c_str());
+    SPIFFS.end();
   }
-  static bool loadConfig(String &ssid, String &password) {
-    EEPROM.begin(512);
-    // for (int i = 0; i < 512; ++i) {
-    //   byte b = EEPROM.read(i);
-    //   Serial.printf("%.2x ", b);
-    // }
-    EEPROM.get(0, ssid);
-    EEPROM.get(0 + sizeof(ssid), password);
-    String ok;
-    // EEPROM.get(0 + sizeof(ssid) + sizeof(password), ok);
-    EEPROM.end();
-    Serial.println(ok);
-    // if (ok.equals("OK"))
-    //   return true;
-    // else
-    //   return false;
+  static bool load(String &ssid, String &password) {
+    SPIFFS.begin();
+    if(!SPIFFS.exists("WIFIConfig")) return false;
+    File f = SPIFFS.open("WIFIConfig", "r");
+    ssid = f.readStringUntil(';');
+    password = f.readStringUntil(';');
+    SPIFFS.end();
     return true;
   }
 };

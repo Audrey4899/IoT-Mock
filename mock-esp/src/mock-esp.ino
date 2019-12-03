@@ -21,7 +21,7 @@ void loop() { webservice.update(); }
 
 void initWifi() {
   String ssid, password;
-  bool configured = ConfigManager::loadConfig(ssid, password);
+  bool configured = ConfigManager::load(ssid, password);
   if(configured) {
     bool connected = WifiManager::connect(ssid, password);
     if(!connected) WifiManager::startAP();

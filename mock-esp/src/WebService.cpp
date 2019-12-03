@@ -122,7 +122,7 @@ void WebService::handleNotFound() {
 void WebService::handleConfigPOST() {
   String ssid = server.arg("ssid");
   String password = server.arg("password");
-  ConfigManager::saveConfig(ssid, password);
+  ConfigManager::save(ssid, password);
   server.send(204);
   delay(500);
   void (*reset)(void) = 0;
