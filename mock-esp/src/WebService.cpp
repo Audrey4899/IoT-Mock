@@ -17,13 +17,18 @@ void WebService::start() {
 
 void WebService::update() {
   server.handleClient();
+  std::list<OutputHandler*> ended;
   for (OutputHandler *handler : this->outputHandlers) {
     handler->update();
-    // if(handler->isDone()) {
-    //   outputHandlers.remove(handler);
-    //   delete handler;
-    // }
-    // TODO: Maybe do this
+    if(handler->isDone()) {
+      ended.push_back(handler);
+    }
+  }
+  while (ended.size()>0) {
+    OutputHandler *h = ended.front();
+    ended.pop_front();
+    outputHandlers.remove(h);
+    delete h;
   }
 }
 
