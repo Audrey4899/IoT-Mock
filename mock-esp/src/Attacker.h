@@ -15,12 +15,12 @@ class Attacker {
   void XSSQueryParams();
   void XSSHeaders(String script);
   void XSSBody(String script);
-  std::list<String> getPaths();
-  void generateBigFile();
+  String generateRandomString(int len);
   String readFile();
   void verbNotExist();
   void emptyVerb();
   void specialChar();
+  std::list<String> getPaths();
 
  public:
   Attacker(std::list<OutInRule*> &rules);
