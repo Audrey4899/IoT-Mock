@@ -9,6 +9,7 @@ import model.Component;
 import model.InOutRule;
 import model.OutInRule;
 import model.Rule;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,6 +18,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet(urlPatterns = {"/*"})
 public class WebService extends HttpServlet {
@@ -25,7 +28,9 @@ public class WebService extends HttpServlet {
     private Map<String, InOutHandler> handlers = new HashMap<>();
 
     public WebService() {
-        app = Javalin.createStandalone();
+        app = Javalin.createStandalone(config -> {
+            config.requestLogger((ctx, executionTimeMs) -> LoggerFactory.getLogger("MOCK").info(String.format("%s on %s -> %d", ctx.method(), ctx.path(), ctx.res.getStatus())));
+        });
         app.exception(LoaderException.class, ExceptionHandlers.genericHandler(400));
         app.exception(RuleAlreadyExistsException.class, ExceptionHandlers.genericHandler(400));
         app.exception(Exception.class, (exception, ctx) -> {

@@ -1,4 +1,5 @@
 import model.OutInRule;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -6,6 +7,8 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class OutputRequest extends Thread {
@@ -52,9 +55,10 @@ public class OutputRequest extends Thread {
     private void requestAsync(HttpRequest request) {
         new Thread(() -> {
             try {
-                client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> res = client.send(request, HttpResponse.BodyHandlers.ofString());
+                LoggerFactory.getLogger("MOCK").info(String.format("Request: %s %s -- %d", request.method(), request.uri(), res.statusCode()));
             } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
+                LoggerFactory.getLogger("MOCK").error(String.format("Request: %s %s -- ERROR %s", request.method(), request.uri(), e.getClass().getSimpleName()));
             }
         }).start();
     }

@@ -30,8 +30,7 @@ public class InOutHandler implements Handler {
             String path = (ctx.queryString() != null) ? String.format("%s?%s", ctx.path(), ctx.queryString()) : rule.getRequest().getPath();
             final boolean[] doesHeadersMatch = {true};
             rule.getRequest().getHeaders().forEach((s, s2) -> {
-                System.out.println(s.getClass());
-                if (!Objects.equals(ctx.headerMap().get(s), s2)) {
+                if (!Objects.equals(ctx.headerMap().get(s.toLowerCase()), s2)) {
                     doesHeadersMatch[0] = false;
                 }
             });
@@ -42,6 +41,7 @@ public class InOutHandler implements Handler {
                 ctx.status(rule.getResponse().getStatus());
                 ctx.result(rule.getResponse().getBody());
                 rule.getResponse().getHeaders().forEach(ctx::header);
+                ctx.header("content-length", String.valueOf(rule.getResponse().getBody().length()));
                 return;
             }
         }
