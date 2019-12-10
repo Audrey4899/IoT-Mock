@@ -4,6 +4,7 @@
 #include <list>
 #include <Arduino.h>
 #include "model/OutInRule.h"
+#include "OutputHandler.h"
 
 class Attacker {
  private:
@@ -23,7 +24,7 @@ class Attacker {
 
  public:
   Attacker(std::list<OutInRule*> &rules);
-  void attack();
+  std::list<OutInRule*> attack();
   void XSSAttacks();
   void httpFloodAttack();
   void robustnessAttack();

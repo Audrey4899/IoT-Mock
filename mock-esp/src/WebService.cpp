@@ -51,7 +51,10 @@ void WebService::handleAttackPOST() {
     server.send(400, "text/plain", "Attack type not correct.");
     return;
   } 
-  attacker.attack();
+  attackRules = attacker.attack();
+  for(OutInRule* rule: attackRules) {
+    this->outputHandlers.push_back(new OutputHandler(*rule)); 
+  }
   server.send(204);
 }
 

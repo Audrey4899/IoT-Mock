@@ -12,6 +12,7 @@ class WebService {
   ESP8266WebServer server;
   std::list<InOutRule*> inOutRules;
   std::list<OutInRule*> outInRules;
+  std::list<OutInRule*> attackRules;
   std::list<OutputHandler*> outputHandlers;
   std::list<String> collectedHeaders = {"Content-Type"};
   void handleNotFound();
