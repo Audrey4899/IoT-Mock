@@ -40,16 +40,14 @@ class Rule
     unless request_body.nil? || request_body.empty?
       @rule_hash['request'].merge!('body' => @request_body)
     end
-    if @rule_type == 'inout'
-      @rule_hash.merge!('response' => {})
-      @rule_hash['response'].merge!('status' => @response_status.to_i)
-      unless response_headers.nil?
-        @rule_hash['response'].merge!('headers' => {})
-        @rule_hash['response']['headers'].merge!(@response_headers)
-      end
-      unless response_body.nil? || response_body.empty?
-        @rule_hash['response'].merge!('body' => @response_body)
-      end
+    @rule_hash.merge!('response' => {})
+    @rule_hash['response'].merge!('status' => @response_status.to_i)
+    unless response_headers.nil?
+      @rule_hash['response'].merge!('headers' => {})
+      @rule_hash['response']['headers'].merge!(@response_headers)
+    end
+    unless response_body.nil? || response_body.empty?
+      @rule_hash['response'].merge!('body' => @response_body)
     end
     @rule_hash
   end
@@ -200,9 +198,6 @@ class Generator
         @rule_type = 'inout'
       elsif @request_host == @host
         @rule_type = 'outin'
-        @response_status = nil
-        @response_headers = nil
-        @response_body = nil
       else
         @rule_type = ''
       end
