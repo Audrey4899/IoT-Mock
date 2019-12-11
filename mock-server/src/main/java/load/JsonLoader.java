@@ -5,7 +5,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class JsonLoader implements Loader {
     /**
@@ -111,16 +114,12 @@ public class JsonLoader implements Loader {
      */
     private Map<String, String> loadHeaders(JSONObject headers) throws LoaderException {
         JSONObject headersObj = getCheckAndCast(headers, "headers", JSONObject.class);
+        if(headersObj == null) return null;
         Map<String, String> headersList = new HashMap<>();
-        if (headersObj != null) {
-            if (headersObj.keys().hasNext()) {
-                String keyName = headersObj.keys().next();
-                String content = getCheckAndCast(headersObj, keyName, String.class);
-                headers.put(keyName, content);
-            }
-            return headersList;
-        } else
-            return null;
+        for (String k: headersObj.keySet()) {
+            headersList.put(k, getCheckAndCast(headersObj, k, String.class));
+        }
+        return headersList;
     }
 
     /**

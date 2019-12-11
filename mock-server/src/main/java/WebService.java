@@ -5,7 +5,6 @@ import load.JsonLoader;
 import load.Loader;
 import load.LoaderException;
 import load.YamlLoader;
-import model.Component;
 import model.InOutRule;
 import model.OutInRule;
 import model.Rule;
@@ -18,8 +17,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @WebServlet(urlPatterns = {"/*"})
 public class WebService extends HttpServlet {
@@ -36,7 +33,7 @@ public class WebService extends HttpServlet {
         app.exception(Exception.class, (exception, ctx) -> {
             exception.printStackTrace();
             ctx.status(500);
-            ctx.result(List.of(exception.getClass().toString(), (exception.getMessage() != null) ? exception.getMessage() : "").toString());
+            ctx.result(String.format("%s, %s", exception.getClass().toString(), exception.getMessage()));
         });
 
         app.get("/", ctx -> ctx.result("It works !"));
