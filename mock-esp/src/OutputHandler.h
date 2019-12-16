@@ -11,8 +11,6 @@ class OutputHandler {
   unsigned long lastTime;
   bool hasStarted;
 
-  unsigned long test = 0;
-
   void sendRequest();
  public:
   explicit OutputHandler(OutInRule &rule);

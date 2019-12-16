@@ -8,10 +8,10 @@
  */
 Attacker::Attacker(std::list<OutInRule*> &rules) {
   this->rules = rules;
-  this->scripts.push_back("<script>alert('XSS')</script>");
-  this->scripts.push_back("<img src=javascript:alert('XSS')>");
-  this->scripts.push_back("</script><script>alert('XSS')</script>");
-  this->scripts.push_back("<svg onload=alert('XSS')>");
+  this->scripts.push_back(F("<script>alert('XSS')</script>"));
+  this->scripts.push_back(F("<img src=javascript:alert('XSS')>"));
+  this->scripts.push_back(F("</script><script>alert('XSS')</script>"));
+  this->scripts.push_back(F("<svg onload=alert('XSS')>"));
 }
 
 /**
@@ -59,7 +59,7 @@ void Attacker::XSSQueryParams() {
     for(String param: queryParams) {
       pos = param.indexOf("=");
       token = param.substring(0, pos);
-      params.insert({token, "%3Cscript%3Ealert%28%22XSS%22%29%3C%2Fscript%3E"});
+      params.insert({token, F("%3Cscript%3Ealert%28%22XSS%22%29%3C%2Fscript%3E")});
     }
     for(it = params.begin(); it != params.end(); it++) {
       path += it->first + "=" + it->second + "&";
@@ -131,7 +131,7 @@ std::list<String> Attacker::getPaths() {
  */ 
 void Attacker::httpFloodAttack() {
   String body = "";
-  String allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  String allowedChar = F("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
   int size = 1000;
   for (int i = 0; i < size; i++) {
     long rdmNbr = random(0, allowedChar.length());
@@ -160,7 +160,7 @@ void Attacker::robustnessAttack() {
  */
 void Attacker::verbNotExist() {
   for (OutInRule* rule : rules) {
-    Request* request = new Request("WrongVerb", rule->getRequest().getPath(), rule->getRequest().getHeaders(), rule->getRequest().getBody());
+    Request* request = new Request(F("WrongVerb"), rule->getRequest().getPath(), rule->getRequest().getHeaders(), rule->getRequest().getBody());
     Response* response = new Response(0, std::map<String, String>(), "");
     attackRules.push_back(new OutInRule(*request, *response, 0L, 1, 0L));
   }

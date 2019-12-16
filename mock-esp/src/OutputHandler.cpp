@@ -41,9 +41,6 @@ void OutputHandler::sendRequest() {
   else Serial.println(test);
 
   http.end();
-  // unsigned long tmp = millis();
-  // Serial.println(tmp - test);
-  // test = tmp;
 }
 
 bool OutputHandler::isDone() {
