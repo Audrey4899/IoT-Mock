@@ -1,8 +1,11 @@
 #include "Attacker.h"
 #include "OutputHandler.h"
 #include <map>
-#include <regex>
 
+/**
+ * The constructor adds the rules and XSS scripts to the different lists.
+ * @param rules: mock rules given by the user.
+ */
 Attacker::Attacker(std::list<OutInRule*> &rules) {
   this->rules = rules;
   this->scripts.push_back("<script>alert('XSS')</script>");
@@ -11,10 +14,18 @@ Attacker::Attacker(std::list<OutInRule*> &rules) {
   this->scripts.push_back("<svg onload=alert('XSS')>");
 }
 
+/**
+ * @return The list of attack rules created
+ */
 std::list<OutInRule*> Attacker::attack() {
   return attackRules;
 }
 
+/**
+ * This method calls the 3 different XSS methods.
+ * The first one uses a different script because the script has to be encoded to be sent
+ * in the http request query parameters.
+ */
 void Attacker::XSSAttacks() {
   XSSQueryParams();
   for(String script: scripts) {
@@ -23,6 +34,10 @@ void Attacker::XSSAttacks() {
   }
 }
 
+/**
+ * This method extracts all the query parameters from the http request URI and changes each
+ * parameter value to the XSS script.
+ */
 void Attacker::XSSQueryParams() {
   String path, token, tempQueryParams;
   size_t pos = 0;
@@ -45,7 +60,6 @@ void Attacker::XSSQueryParams() {
       pos = param.indexOf("=");
       token = param.substring(0, pos);
       params.insert({token, "%3Cscript%3Ealert%28%22XSS%22%29%3C%2Fscript%3E"});
-      //TODO: tester avec scripts de base ?
     }
     for(it = params.begin(); it != params.end(); it++) {
       path += it->first + "=" + it->second + "&";
@@ -57,6 +71,11 @@ void Attacker::XSSQueryParams() {
   }
 }
 
+/**
+ * This method extracts all the headers from the http request and changes each
+ * value to the XSS script.
+ * @param script: the XSS script which is gonna be injected.
+ */
 void Attacker::XSSHeaders(String script) {
   std::map<String,String> headers;
   for(OutInRule* rule: rules) {
@@ -71,6 +90,10 @@ void Attacker::XSSHeaders(String script) {
   }
 }
 
+/**
+ * This method extracts the body from the http request and changes its value to the XSS script.
+ * @param script: the XSS script which is gonna be injected.
+ */
 void Attacker::XSSBody(String script) {
   String body = "";
   for(OutInRule* rule: rules) {
@@ -83,7 +106,11 @@ void Attacker::XSSBody(String script) {
     } else return;
   }
 }
-  
+
+/**
+ * For each OutIn rules, it gets the path and extracts the IP address or the domain name.
+ * @return The list of the paths contained in OutIn rules.
+ */
 std::list<String> Attacker::getPaths() {
     std::list<String> paths;
     String group;
@@ -98,6 +125,10 @@ std::list<String> Attacker::getPaths() {
     return paths;
 }
 
+/**
+ * Add each random alphanumeric character to the request body.
+ * For each connected object, it creates an OutInRule with the random String generated in the request body.
+ */ 
 void Attacker::httpFloodAttack() {
   String body = "";
   String allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -114,12 +145,19 @@ void Attacker::httpFloodAttack() {
   }
 }
 
+/**
+ * This method calls all or selected robustness attacks.
+ */
 void Attacker::robustnessAttack() {
   verbNotExist();
   emptyVerb();
   specialChar();
 }
 
+/**
+ * For each existing OutInRule, it replaces the original method with an illegal HTTP method
+ * and adds it in the attackRules list.
+ */
 void Attacker::verbNotExist() {
   for (OutInRule* rule : rules) {
     Request* request = new Request("WrongVerb", rule->getRequest().getPath(), rule->getRequest().getHeaders(), rule->getRequest().getBody());
@@ -128,6 +166,9 @@ void Attacker::verbNotExist() {
   }
 }
 
+/**
+ * For each existing OutInRule, it replaces the original method with an empty parameter.
+ */
 void Attacker::emptyVerb() {
   for (OutInRule* rule : rules) {
     Request* request = new Request("", rule->getRequest().getPath(), rule->getRequest().getHeaders(), rule->getRequest().getBody());
@@ -136,6 +177,9 @@ void Attacker::emptyVerb() {
   }
 }
 
+/**
+ * For each existing OutInRule, it adds two special characters in the original HTTP method.
+ */
 void Attacker::specialChar() {
   for (OutInRule* rule : rules) {
     String method = rule->getRequest().getMethod();
