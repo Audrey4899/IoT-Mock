@@ -1,5 +1,12 @@
 #include "JsonLoader.h"
 
+/**
+ * Parses the JSON String and adds different rules in list
+ * 
+ * @param str: The JSON String from which to load the rules
+ * @param rules: List of rules in which we add each rule loaded
+ * @return A message of success or an error message
+ */
 String JsonLoader::load(String str, std::list<Rule *> &rules) {
   DynamicJsonDocument doc(2048);
   DeserializationError error = deserializeJson(doc, str);
@@ -31,6 +38,13 @@ String JsonLoader::load(String str, std::list<Rule *> &rules) {
   return "OK";
 }
 
+/**
+ * Loads an InOutRule
+ * 
+ * @param rule: The parsed rule
+ * @param inOutRule: The InOutRule
+ * @return A message of success or an error message
+ */
 String JsonLoader::loadInOutRule(JsonObject &rule, InOutRule *&inOutRule) {
   Request *request;
   Response *response;
@@ -46,6 +60,13 @@ String JsonLoader::loadInOutRule(JsonObject &rule, InOutRule *&inOutRule) {
   return "OK";
 }
 
+/**
+ * Loads an OutInRule
+ * 
+ * @param rule: The parsed rule
+ * @param inOutRule: The OutInRule object
+ * @return A message of success or an error message
+ */
 String JsonLoader::loadOutInRule(JsonObject &rule, OutInRule *&outInRule) {
   Request *request;
   Response *response;
@@ -66,6 +87,13 @@ String JsonLoader::loadOutInRule(JsonObject &rule, OutInRule *&outInRule) {
   return "OK";
 }
 
+/**
+ * Loads a Request
+ * 
+ * @param rule: The parsed rule
+ * @param request: The request object
+ * @return A message of success or an error message
+ */
 String JsonLoader::loadRequest(JsonObject &rule, Request *&request) {
   JsonObject req = rule["request"];
   if(req.isNull()) return "OK";
@@ -81,6 +109,13 @@ String JsonLoader::loadRequest(JsonObject &rule, Request *&request) {
   return "OK";
 }
 
+/**
+ * Loads a Response
+ * 
+ * @param rule: The parsed rule
+ * @param request: The response object
+ * @return A message of success or an error message
+ */
 String JsonLoader::loadResponse(JsonObject &rule, Response *&response) {
   JsonObject res = rule["response"];
   if(res.isNull()) return "OK";
@@ -94,6 +129,13 @@ String JsonLoader::loadResponse(JsonObject &rule, Response *&response) {
   return "OK";
 }
 
+/**
+ * Loads a Headers
+ * 
+ * @param obj: The JSONObject to get it headers
+ * @param headers: The list of headers
+ * @return A message of success or an error message
+ */
 String JsonLoader::loadHeaders(JsonObject &obj, std::map<String, String> *&headers) {
   JsonObject heads = obj["headers"];
   headers = new std::map<String, String>();
