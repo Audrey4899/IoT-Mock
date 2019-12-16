@@ -1,6 +1,9 @@
 #include "WifiManager.h"
 #include <ESP8266WiFi.h>
 
+/**
+ * This method sets up the ESP Wifi access point.
+ */
 void WifiManager::startAP() {
   IPAddress local_IP(192, 168, 1, 1);
   IPAddress gateway(192, 168, 1, 1);
@@ -21,6 +24,12 @@ void WifiManager::startAP() {
   WiFi.softAP(AP_NameString, "");
 }
 
+/**
+ * This method connects the ESP to the given Wifi SSID with the given password.
+ * @param ssid: The Wifi SSID.
+ * @param password: The Wifi password.
+ * @return True if the ESP has successfully connected to Wifi, otherwise false.
+ */
 bool WifiManager::connect(String ssid, String password) {
   WiFi.mode(WIFI_STA);
 

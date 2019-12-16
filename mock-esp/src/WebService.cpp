@@ -4,6 +4,11 @@
 #include "ConfigManager.h"
 #include "Attacker.h"
 
+/**
+ * This method starts the web server. The server is listening on 3 paths:
+ * /config, /rules and /attack.
+ * It also collects the content type of the HTTP request.
+ */
 void WebService::start() {
   server.on("/config", HTTP_POST, [this]() { handleConfigPOST(); });
   server.on("/rules", HTTP_POST, [this]() { handleRulesPOST(); });
@@ -17,6 +22,11 @@ void WebService::start() {
   Serial.println("Web service initialized.");
 }
 
+/**
+ * This method must be called in the ESP loop method.
+ * It updates the OutputHandlers and add them to the ended list if they are.
+ * After the update, it deletes the ended OutputHandlers from the list.
+ */ 
 void WebService::update() {
   server.handleClient();
   std::list<OutputHandler*> ended;
@@ -34,6 +44,12 @@ void WebService::update() {
   }
 }
 
+/**
+ * This method is called when the user does a HTTP POST request to the
+ * attack path of the mock IP address. It calls the correct attack methods
+ * according to the user's choice and creates OutputHandlers for each attack rules
+ * returned by the attacker class.
+ */
 void WebService::handleAttackPOST() {
   String type = server.arg("type");
   Attacker attacker(outInRules);
@@ -58,6 +74,10 @@ void WebService::handleAttackPOST() {
   server.send(204);
 }
 
+/**
+ * This method is called when the user does a HTTP POST request to the
+ * rules path of the mock IP address. It loads the rules given with the JSON loader.
+ */ 
 void WebService::handleRulesPOST() {
   Loader *loader;
 
@@ -107,6 +127,11 @@ void WebService::handleRulesPOST() {
   server.send(204);
 }
 
+/**
+ * This method is called when the user does a HTTP request to the
+ * mock IP address. It checks if an InOut rule with the requested path exist.
+ * If not, it returns a 404 status code.
+ */ 
 void WebService::handleNotFound() {
   String rawURI = server.uri();
   String query = "";
@@ -152,6 +177,11 @@ void WebService::handleNotFound() {
   }
 }
 
+/**
+ * This method is called when the user does a HTTP POST request to the
+ * config path of the mock IP address. It configures the Wifi SSID and password
+ * on which the ESP will connect. 
+ */ 
 void WebService::handleConfigPOST() {
   String ssid = server.arg("ssid");
   String password = server.arg("password");

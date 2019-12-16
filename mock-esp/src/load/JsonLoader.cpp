@@ -1,11 +1,10 @@
 #include "JsonLoader.h"
 
 /**
- * Parses the JSON String and adds different rules in list
- * 
- * @param str: The JSON String from which to load the rules
- * @param rules: List of rules in which we add each rule loaded
- * @return A message of success or an error message
+ * This method parses the JSON string and adds the rules in the list. * 
+ * @param str: The JSON string from which to load the rules.
+ * @param rules: The rules list in which it adds each rule loaded.
+ * @return A success/error message.
  */
 String JsonLoader::load(String str, std::list<Rule *> &rules) {
   DynamicJsonDocument doc(ESP.getFreeHeap() / 2);
@@ -39,11 +38,10 @@ String JsonLoader::load(String str, std::list<Rule *> &rules) {
 }
 
 /**
- * Loads an InOutRule
- * 
- * @param rule: The parsed rule
- * @param inOutRule: The InOutRule
- * @return A message of success or an error message
+ * This method loads an InOutRule.
+ * @param rule: The parsed rule.
+ * @param inOutRule: The InOutRule which is gonna be instancied.
+ * @return A success/error message.
  */
 String JsonLoader::loadInOutRule(JsonObject &rule, InOutRule *&inOutRule) {
   Request *request = nullptr;
@@ -61,11 +59,10 @@ String JsonLoader::loadInOutRule(JsonObject &rule, InOutRule *&inOutRule) {
 }
 
 /**
- * Loads an OutInRule
- * 
- * @param rule: The parsed rule
- * @param inOutRule: The OutInRule object
- * @return A message of success or an error message
+ * This method loads an OutInRule.
+ * @param rule: The parsed rule.
+ * @param outInRule: The OutInRule which is gonna be instancied.
+ * @return A success/error message.
  */
 String JsonLoader::loadOutInRule(JsonObject &rule, OutInRule *&outInRule) {
   Request *request = nullptr;
@@ -88,11 +85,10 @@ String JsonLoader::loadOutInRule(JsonObject &rule, OutInRule *&outInRule) {
 }
 
 /**
- * Loads a Request
- * 
- * @param rule: The parsed rule
- * @param request: The request object
- * @return A message of success or an error message
+ * This method loads a rule request.
+ * @param rule: The parsed rule.
+ * @param request: The request which is gonna be instancied.
+ * @return A success/error message.
  */
 String JsonLoader::loadRequest(JsonObject &rule, Request *&request) {
   JsonObject req = rule["request"];
@@ -110,11 +106,10 @@ String JsonLoader::loadRequest(JsonObject &rule, Request *&request) {
 }
 
 /**
- * Loads a Response
- * 
- * @param rule: The parsed rule
- * @param request: The response object
- * @return A message of success or an error message
+ * This method loads a rule response.
+ * @param rule: The parsed rule.
+ * @param request: The response which is gonna be instancied.
+ * @return A success/error message.
  */
 String JsonLoader::loadResponse(JsonObject &rule, Response *&response) {
   JsonObject res = rule["response"];
@@ -130,11 +125,10 @@ String JsonLoader::loadResponse(JsonObject &rule, Response *&response) {
 }
 
 /**
- * Loads a Headers
- * 
- * @param obj: The JSONObject to get it headers
- * @param headers: The list of headers
- * @return A message of success or an error message
+ * This method loads a rule headers.
+ * @param obj: The JSON object to get the rule headers.
+ * @param headers: The headers map.
+ * @return A success/error message.
  */
 String JsonLoader::loadHeaders(JsonObject &obj, std::map<String, String> *&headers) {
   JsonObject heads = obj["headers"];

@@ -3,6 +3,10 @@
 #include <ESP8266WiFiMulti.h>
 #include "OutputHandler.h"
 
+/**
+ * The constructor creates an OutputHandler from a given OutIn rule.
+ * @param rule: The given rule.
+ */ 
 OutputHandler::OutputHandler(OutInRule &rule) {
   this->rule = &rule;
   this->count = 0;
@@ -11,6 +15,9 @@ OutputHandler::OutputHandler(OutInRule &rule) {
   this->hasStarted = false;
 }
 
+/**
+ * This method updates the OutputHandler.
+ */ 
 void OutputHandler::update() {
   if (isDone()) return;
   if (this->startTime == 0) this->startTime = millis();
@@ -24,6 +31,9 @@ void OutputHandler::update() {
   }
 }
 
+/**
+ * This method sends the rule request.
+ */
 void OutputHandler::sendRequest() {
   this->count++;
   this->lastTime = millis();
@@ -43,6 +53,10 @@ void OutputHandler::sendRequest() {
   http.end();
 }
 
+/**
+ * This method checks if the rule request has to don't be send anymore.
+ * @return True if the rule request has to don't be send anymore, otherwise false.
+ */
 bool OutputHandler::isDone() {
   return (count >= rule->getRepeat() && rule->getRepeat() != 0);
 }
