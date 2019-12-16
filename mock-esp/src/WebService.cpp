@@ -2,10 +2,12 @@
 
 #include "load/JsonLoader.h"
 #include "ConfigManager.h"
+#include "Attacker.h"
 
 void WebService::start() {
   server.on("/config", HTTP_POST, [this]() { handleConfigPOST(); });
   server.on("/rules", HTTP_POST, [this]() { handleRulesPOST(); });
+  server.on("/attack", HTTP_POST, [this]() { handleAttackPOST(); });
   server.onNotFound([this]() { handleNotFound(); });
 
   const char *keys[] = {"Content-Type"};
@@ -30,6 +32,30 @@ void WebService::update() {
     outputHandlers.remove(h);
     delete h;
   }
+}
+
+void WebService::handleAttackPOST() {
+  String type = server.arg("type");
+  Attacker attacker(outInRules);
+  if(type.equals("all")) {
+    attacker.XSSAttacks();
+    attacker.httpFloodAttack();
+    attacker.robustnessAttack();
+  } else if (type.equals("xss")) {
+    attacker.XSSAttacks();
+  } else if (type.equals("httpflood")) {
+    attacker.httpFloodAttack();
+  } else if(type.equals("robustness")) {
+    attacker.robustnessAttack();
+  } else {
+    server.send(400, "text/plain", "Attack type not correct.");
+    return;
+  } 
+  attackRules = attacker.attack();
+  for(OutInRule* rule: attackRules) {
+    this->outputHandlers.push_back(new OutputHandler(*rule)); 
+  }
+  server.send(204);
 }
 
 void WebService::handleRulesPOST() {
@@ -62,6 +88,7 @@ void WebService::handleRulesPOST() {
       inOutRules.push_back(inout);
     } else if (r->getClass().equals("OutInRule")) {
       OutInRule *outin = (OutInRule *)r;
+      outInRules.push_back(outin);
       outputHandlers.push_back(new OutputHandler(*outin));
     }
   }
