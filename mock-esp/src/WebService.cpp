@@ -80,7 +80,6 @@ void WebService::handleRulesPOST() {
   for (Rule *r : rules) {
     if (r->getClass().equals("InOutRule")) {
       InOutRule *inout = (InOutRule *)r;
-      Serial.println(inout->getRequest().getPath());
       for (auto &&h : inout->getRequest().getHeaders()) {
         headersKeys.push_back(h.first);
       }
@@ -146,8 +145,10 @@ void WebService::handleNotFound() {
     }
     contentType = (contentType == "") ? "text/plain" : contentType;
     server.send(r->getResponse().getStatus(), contentType, r->getResponse().getBody());
+    Serial.println(r->getRequest().getMethod() + " on " + r->getRequest().getPath() + " -> " + r->getResponse().getStatus());
   } else {
     server.send(404, "text/plain", "No rule defined for this request.");
+    Serial.println(r->getRequest().getMethod() + " on " + r->getRequest().getPath() + " -> 404 No rule found.");
   }
 }
 

@@ -37,8 +37,8 @@ void OutputHandler::sendRequest() {
   }
   int test = http.sendRequest((char *)(rule->getRequest().getMethod().c_str()), rule->getRequest().getBody());
 
-  if (test < 0) Serial.println(http.errorToString(test));
-  else Serial.println(test);
+  if (test < 0) Serial.println("Request: " + rule->getRequest().getMethod() + " " + rule->getRequest().getPath() + " -- " + "ERROR " + http.errorToString(test));
+  else Serial.println("Request: " + rule->getRequest().getMethod() + " " + rule->getRequest().getPath() + " -- " + test);
 
   http.end();
 }

@@ -10,7 +10,7 @@ WebService webservice;
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Hello world !");
+  Serial.println("   -   Starting...");
 
   initWifi();
   webservice.start();
