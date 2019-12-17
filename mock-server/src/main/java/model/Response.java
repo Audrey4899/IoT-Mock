@@ -16,6 +16,8 @@ public class Response {
         if(status < 100 || status >= 600) throw new IllegalArgumentException("Wrong status code. Must be between 100 and 600.");
         this.headers = (headers != null)? headers : new TreeMap<>();
         this.body = (body != null) ? body : "";
+        this.body = this.body.replace("\\r\\n", String.valueOf('\n'));
+        this.body = this.body.replace("\\n", String.valueOf('\n'));
     }
 
     public int getStatus() {
