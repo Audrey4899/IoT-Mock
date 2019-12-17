@@ -10,6 +10,11 @@ import java.util.Objects;
 public class InOutHandler implements Handler {
     private List<InOutRule> rules = new ArrayList<>();
 
+    /**
+     * This method adds the rule to the list.
+     * @param rule: the rule to add.
+     * @throws RuleAlreadyExistsException if the rule already exists.
+     */
     public void addRule(InOutRule rule) throws RuleAlreadyExistsException {
         for (InOutRule r : rules) {
             if (r.getRequest().getPath().equals(rule.getRequest().getPath())
@@ -20,10 +25,18 @@ public class InOutHandler implements Handler {
         rules.add(rule);
     }
 
+    /**
+     * This method deletes the rule from the list.
+     * @param rule: the rule to delete.
+     */
     public void removeRule(InOutRule rule) {
         rules.remove(rule);
     }
 
+    /**
+     * This method compares the given context with each rule of the list.
+     * If the context equals a rule, then it return the corresponding response.
+     */
     @Override
     public void handle(@NotNull Context ctx) throws Exception {
         for (InOutRule rule : rules) {

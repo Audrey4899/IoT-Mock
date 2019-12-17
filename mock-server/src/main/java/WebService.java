@@ -24,6 +24,11 @@ public class WebService extends HttpServlet {
     private Javalin app;
     private Map<String, InOutHandler> handlers = new HashMap<>();
 
+    /**
+     * This method starts the web server. The server is listening on 3 paths:
+     * /config, /rules and /attack.
+     * It also collects the content type of the HTTP request.
+     */
     public WebService() {
         app = Javalin.createStandalone(config -> {
             config.requestLogger((ctx, executionTimeMs) -> LoggerFactory.getLogger("MOCK").info(String.format("%s on %s -> %d", ctx.method(), ctx.path(), ctx.res.getStatus())));
@@ -41,6 +46,11 @@ public class WebService extends HttpServlet {
         app.post("/attack",attackHandler());
     }
 
+    /**
+     * This method is called when the user does a HTTP POST request to the
+     * attack path of the mock IP address. It calls the correct attack methods
+     * according to the user's choice.
+     */
     private Handler attackHandler() {
         return ctx -> {
             if(getRules().size() != 0) {
@@ -50,16 +60,13 @@ public class WebService extends HttpServlet {
                     attacker.XSSAttacks();
                     attacker.httpFloodAttack();
                     attacker.robustnessAttacks();
-                    //attacker.requestSplittingAttack();
                 } else if (Objects.equals(ctx.queryParam("type"), "httpflood")) {
                     attacker.httpFloodAttack();
                 } else if(Objects.equals(ctx.queryParam("type"), "xss")) {
                     attacker.XSSAttacks();
                 } else if(Objects.equals(ctx.queryParam("type"),"robustness")) {
                     attacker.robustnessAttacks();
-                }/* else if (Objects.equals(ctx.queryParam("type"), "reqsplitting")) {
-                    attacker.requestSplittingAttack();
-                }*/
+                }
                 else {
                     ctx.result("Error: wrong/no attack type given;");
                     ctx.status(400);
@@ -72,6 +79,10 @@ public class WebService extends HttpServlet {
         };
     }
 
+    /**
+     * This method is called when the user does a HTTP POST request to the rules
+     * path of the mock IP address. It loads the rules given with the JSON or YAML loader.
+     */
     private Handler addRulesHandler() {
         return ctx -> {
             Loader loader;
@@ -90,6 +101,12 @@ public class WebService extends HttpServlet {
         };
     }
 
+    /**
+     * This method calls the addHandler method or creates an output request according
+     * to the rule type.
+     * @param rules: the list of rules.
+     * @throws RuleAlreadyExistsException if the rule already exists.
+     */
     private void initRules(List<Rule> rules) throws RuleAlreadyExistsException {
         for (Rule rule: rules) {
             if (rule instanceof InOutRule) {
@@ -101,6 +118,11 @@ public class WebService extends HttpServlet {
         }
     }
 
+    /**
+     * This method creates a handler for the given rule.
+     * @param rule: the InOut rule.
+     * @throws RuleAlreadyExistsException if the rule already exists.
+     */
     private void addHandler(InOutRule rule) throws RuleAlreadyExistsException {
         String simplePath = rule.getRequest().getPath().split("\\?")[0];
         String id = rule.getRequest().getMethod() + simplePath;
