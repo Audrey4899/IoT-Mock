@@ -165,7 +165,7 @@ void WebService::handleNotFound() {
   if (r != nullptr) {
     String contentType;
     for (auto &&header : r->getResponse().getHeaders()) {
-      if (header.first == "Content-Type") contentType = header.first;
+      if (header.first == "Content-Type") contentType = header.second;
       else server.sendHeader(header.first, header.second);
     }
     contentType = (contentType == "") ? "text/plain" : contentType;
