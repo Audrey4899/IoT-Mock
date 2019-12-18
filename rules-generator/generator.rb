@@ -207,9 +207,9 @@ class Generator
     requests = []
     responses = []
     @file_data.each do |line|
-      if line.include?('Verb=')
+      if line.include?('@Verb=')
         requests << line
-      elsif line.include?('status=')
+      elsif line.include?('@status=')
         responses << line
       else
         puts 'Error when dispatching resquests/responses.'
@@ -217,36 +217,49 @@ class Generator
       end
     end
     @rules = []
-    while !requests.empty? && !responses.empty?
+    until requests.empty? || responses.empty?
+      i = 0
+      no_response = false
       get_request_composition(requests[0])
-      get_response_composition(responses[0])
-      if @request_dest == @host && @response_host == @host
-        @rule_type = 'inout'
-      elsif @request_host == @host
-        @rule_type = 'outin'
-      else
-        @rule_type = ''
-      end
-      if @rule_type == 'outin'
-        fullpath = "http://#{@request_dest}#{request_path}"
-        rule = Rule.new(@rule_type, @request_method, fullpath, @request_headers, @request_body, @response_status, @response_headers, @response_body)
-      elsif @rule_type == 'inout'
-        rule = Rule.new(@rule_type, @request_method, @request_path, @request_headers, @request_body, @response_status, @response_headers, @response_body)
-      end
-      if @rule_type != '' && @rules.empty?
-        @rules << rule
-      elsif @rule_type != '' && !@rules.empty?
-        exist = false
-        @rules.each do |existing_rule|
-          if existing_rule.equals?(rule)
-            exist = true
-            break
-          end
+      get_response_composition(responses[i])
+      while @request_host != @response_dest || @request_dest != @response_host
+        i += 1
+        if i >= responses.length
+          requests.shift
+          no_response = true
+          break
         end
-        @rules << rule if exist == false
+        get_response_composition(responses[i])
       end
-      requests.shift
-      responses.shift
+      unless no_response
+        if @request_dest == @host && @response_host == @host
+          @rule_type = 'inout'
+        elsif @request_host == @host
+          @rule_type = 'outin'
+        else
+          @rule_type = ''
+        end
+        if @rule_type == 'outin'
+          fullpath = "http://#{@request_dest}#{request_path}"
+          rule = Rule.new(@rule_type, @request_method, fullpath, @request_headers, @request_body, @response_status, @response_headers, @response_body)
+        elsif @rule_type == 'inout'
+          rule = Rule.new(@rule_type, @request_method, @request_path, @request_headers, @request_body, @response_status, @response_headers, @response_body)
+        end
+        if @rule_type != '' && @rules.empty?
+          @rules << rule
+        elsif @rule_type != '' && !@rules.empty?
+          exist = false
+          @rules.each do |existing_rule|
+            if existing_rule.equals?(rule)
+              exist = true
+              break
+            end
+          end
+          @rules << rule if exist == false
+        end
+        requests.shift
+        responses.delete_at(i)
+      end
     end
     save_rule
   end
