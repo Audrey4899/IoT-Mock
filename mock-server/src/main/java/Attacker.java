@@ -87,7 +87,7 @@ public class Attacker {
                 path = path.concat(e.getKey() + "=%3Cscript%3Ealert%28%22XSS%22%29%3C%2Fscript%3E&");
             }
             path = path.substring(0,path.length()-1);
-            attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(),path,rule.getRequest().getHeaders(),rule.getRequest().getBody()), null, 0L, 1, 0L));
+            attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(),path,rule.getRequest().getHeaders(),rule.getRequest().getBody()), rule.getResponse(), 0L, 1, 0L));
         }
     }
 
@@ -106,7 +106,7 @@ public class Attacker {
                 for (String k : rule.getRequest().getHeaders().keySet()) {
                     headersMap.put(k, script);
                 }
-                attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(), rule.getRequest().getPath(), headersMap, rule.getRequest().getBody()), null, 0L, 1, 0L));
+                attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(), rule.getRequest().getPath(), headersMap, rule.getRequest().getBody()), rule.getResponse(), 0L, 1, 0L));
             } else return;
         }
     }
@@ -123,7 +123,7 @@ public class Attacker {
             String body = rule.getRequest().getBody();
             if(!body.equals("")){
                 body = script;
-                attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(), rule.getRequest().getPath(), rule.getRequest().getHeaders(), body), null, 0L, 1, 0L));
+                attackRules.add(new OutInRule(new Request(rule.getRequest().getMethod(), rule.getRequest().getPath(), rule.getRequest().getHeaders(), body), rule.getResponse(), 0L, 1, 0L));
             } else return;
         }
     }
@@ -222,7 +222,7 @@ public class Attacker {
     private void verbNotExist() {
         for (Rule rule : rules) {
             attackRules.add(new OutInRule(new Request("wrongVerb", rule.getRequest().getPath(), rule.getRequest().getHeaders(),
-                    rule.getRequest().getBody()), null, 0L, 1, null));
+                    rule.getRequest().getBody()), rule.getResponse(), 0L, 1, null));
         }
     }
 
@@ -232,7 +232,7 @@ public class Attacker {
     private void emptyVerb() {
         for (Rule rule : rules) {
             attackRules.add(new OutInRule(new Request("", rule.getRequest().getPath(), rule.getRequest().getHeaders(),
-                    rule.getRequest().getBody()), null, 0L, 1, null));
+                    rule.getRequest().getBody()), rule.getResponse(), 0L, 1, null));
         }
     }
 
@@ -244,7 +244,7 @@ public class Attacker {
             String method = rule.getRequest().getMethod();
             method = new StringBuffer(method).insert(1, "@").insert(3, "€").toString();
             attackRules.add(new OutInRule(new Request(method, rule.getRequest().getPath(), rule.getRequest().getHeaders(),
-                    rule.getRequest().getBody()), null, 0L, 1, null));
+                    rule.getRequest().getBody()), rule.getResponse(), 0L, 1, null));
         }
     }
 }
