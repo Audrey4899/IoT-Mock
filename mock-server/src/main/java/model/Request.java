@@ -18,6 +18,8 @@ public class Request {
         this.path = requireNonNull(path, "Parameter path is required.");
         this.headers = (headers != null) ? headers : new TreeMap<>();
         this.body = (body != null) ? body : "";
+        this.body = this.body.replace("\\r\\n", String.valueOf('\n'));
+        this.body = this.body.replace("\\n", String.valueOf('\n'));
     }
 
     public String getMethod() {

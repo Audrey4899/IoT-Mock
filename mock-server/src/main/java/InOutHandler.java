@@ -10,6 +10,11 @@ import java.util.Objects;
 public class InOutHandler implements Handler {
     private List<InOutRule> rules = new ArrayList<>();
 
+    /**
+     * This method adds the rule to the list.
+     * @param rule: the rule to add.
+     * @throws RuleAlreadyExistsException if the rule already exists.
+     */
     public void addRule(InOutRule rule) throws RuleAlreadyExistsException {
         for (InOutRule r : rules) {
             if (r.getRequest().getPath().equals(rule.getRequest().getPath())
@@ -20,18 +25,25 @@ public class InOutHandler implements Handler {
         rules.add(rule);
     }
 
+    /**
+     * This method deletes the rule from the list.
+     * @param rule: the rule to delete.
+     */
     public void removeRule(InOutRule rule) {
         rules.remove(rule);
     }
 
+    /**
+     * This method compares the given context with each rule of the list.
+     * If the context equals a rule, then it return the corresponding response.
+     */
     @Override
     public void handle(@NotNull Context ctx) throws Exception {
         for (InOutRule rule : rules) {
             String path = (ctx.queryString() != null) ? String.format("%s?%s", ctx.path(), ctx.queryString()) : rule.getRequest().getPath();
             final boolean[] doesHeadersMatch = {true};
             rule.getRequest().getHeaders().forEach((s, s2) -> {
-                System.out.println(s.getClass());
-                if (!Objects.equals(ctx.headerMap().get(s), s2)) {
+                if (!Objects.equals(ctx.headerMap().get(s.toLowerCase()), s2)) {
                     doesHeadersMatch[0] = false;
                 }
             });
@@ -42,6 +54,7 @@ public class InOutHandler implements Handler {
                 ctx.status(rule.getResponse().getStatus());
                 ctx.result(rule.getResponse().getBody());
                 rule.getResponse().getHeaders().forEach(ctx::header);
+                ctx.header("content-length", String.valueOf(rule.getResponse().getBody().length()));
                 return;
             }
         }
