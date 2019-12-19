@@ -135,7 +135,7 @@ void WebService::handleRulesPOST() {
 void WebService::handleNotFound() {
   String rawURI = server.uri();
   String query = "";
-  for (size_t i = 0; i < server.args(); i++) {
+  for (size_t i = 0; i < (size_t)server.args(); i++) {
     if (server.argName(i).equals("plain")) continue;
     query += "&" + server.argName(i) + "=" + server.arg(i);
   }
@@ -185,9 +185,11 @@ void WebService::handleNotFound() {
 void WebService::handleConfigPOST() {
   String ssid = server.arg("ssid");
   String password = server.arg("password");
-  ConfigManager::save(ssid, password);
+  String ip = server.arg("ip");
+  ConfigManager::save(ssid, password, ip);
   server.send(204);
   delay(500);
+  Serial.println("Rebooting...");
   void (*reset)(void) = 0;
   reset();
 }

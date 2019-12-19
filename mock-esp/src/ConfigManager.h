@@ -14,10 +14,10 @@ class ConfigManager {
    * @param ssid: The Wifi SSID.
    * @param password: The Wifi password.
    */ 
-  static void save(String ssid, String password) {
+  static void save(String ssid, String password, String ip) {
     SPIFFS.begin();
     File f = SPIFFS.open("WIFIConfig", "w");
-    f.printf("%s;%s;", ssid.c_str(), password.c_str());
+    f.printf("%s;%s;%s;", ssid.c_str(), password.c_str(), ip.c_str());
     SPIFFS.end();
   }
   /**
@@ -26,12 +26,13 @@ class ConfigManager {
    * @param password: The Wifi password.
    * @return False if there isn't a configuration, otherwise true.
    */
-  static bool load(String &ssid, String &password) {
+  static bool load(String &ssid, String &password, String &ip) {
     SPIFFS.begin();
     if(!SPIFFS.exists("WIFIConfig")) return false;
     File f = SPIFFS.open("WIFIConfig", "r");
     ssid = f.readStringUntil(';');
     password = f.readStringUntil(';');
+    ip = f.readStringUntil(';');
     SPIFFS.end();
     return true;
   }

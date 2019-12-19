@@ -20,10 +20,10 @@ void loop() { webservice.update(); }
 
 
 void initWifi() {
-  String ssid, password;
-  bool configured = ConfigManager::load(ssid, password);
+  String ssid, password, ip;
+  bool configured = ConfigManager::load(ssid, password, ip);
   if(configured) {
-    bool connected = WifiManager::connect(ssid, password);
+    bool connected = WifiManager::connect(ssid, password, ip);
     if(!connected) WifiManager::startAP();
   } else {
     WifiManager::startAP();
